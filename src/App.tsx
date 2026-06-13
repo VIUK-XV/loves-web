@@ -45,6 +45,21 @@ function sanitizeRoomCode(value: string) {
   return value.trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
 }
 
+function extractRoomCode(value: string) {
+  const trimmedValue = value.trim();
+  const roomMatch = trimmedValue.match(/\/room\/([A-Za-z0-9]+)/);
+  if (roomMatch?.[1]) {
+    return sanitizeRoomCode(roomMatch[1]);
+  }
+
+  const hashMatch = trimmedValue.match(/#\/room\/([A-Za-z0-9]+)/);
+  if (hashMatch?.[1]) {
+    return sanitizeRoomCode(hashMatch[1]);
+  }
+
+  return sanitizeRoomCode(trimmedValue);
+}
+
 function makeRoomCode() {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   const bytes = new Uint8Array(6);
@@ -162,7 +177,7 @@ function HomeScreen() {
 
   function joinRoom(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const code = sanitizeRoomCode(roomCode);
+    const code = extractRoomCode(roomCode);
     if (!code) {
       showError("部屋コードを入力してください。");
       return;
@@ -204,10 +219,8 @@ function HomeScreen() {
             <input
               id="room-code"
               value={roomCode}
-              onChange={(event: { target: { value: string } }) =>
-                setRoomCode(sanitizeRoomCode(event.target.value))
-              }
-              placeholder="部屋コード"
+              onChange={(event: { target: { value: string } }) => setRoomCode(event.target.value)}
+              placeholder="部屋コードか共有URL"
               inputMode="text"
               autoCapitalize="characters"
             />
