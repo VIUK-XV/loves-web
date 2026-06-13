@@ -1,6 +1,13 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { RealtimeChannel } from "@supabase/supabase-js";
-import { cards, categoryLabels, levelLabels, QuestionCard } from "./data/cards";
+import {
+  CardCategory,
+  CardLevel,
+  cards,
+  categoryLabels,
+  levelLabels,
+  QuestionCard,
+} from "./data/cards";
 import { Room, ensureAnonymousSession, isSupabaseConfigured, supabase } from "./lib/supabase";
 import { shuffleWithSeed } from "./lib/shuffle";
 
@@ -12,6 +19,12 @@ type ToastState = {
   message: string;
   tone: "success" | "error";
 };
+
+type CategoryFilter = "all" | CardCategory;
+type LevelFilter = "all" | CardLevel;
+
+const categoryOptions = Object.entries(categoryLabels) as [CardCategory, string][];
+const levelOptions: CardLevel[] = [1, 2, 3];
 
 function parseRoute(): Route {
   const hash = window.location.hash.replace(/^#\/?/, "");
@@ -227,6 +240,8 @@ function RoomScreen({ roomCode }: { roomCode: string }) {
   const [saving, setSaving] = useState(false);
   const [presenceCount, setPresenceCount] = useState(1);
   const [toast, setToast] = useState<ToastState | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>("all");
+  const [selectedLevel, setSelectedLevel] = useState<LevelFilter>("all");
 
   const orderedCards = useMemo(() => {
     return room ? shuffleWithSeed(cards, room.seed) : cards;
@@ -234,7 +249,25 @@ function RoomScreen({ roomCode }: { roomCode: string }) {
 
   const currentIndex = room ? clampIndex(room.current_index, orderedCards.length) : 0;
   const currentCard = orderedCards[currentIndex];
-  const progressText = `${currentIndex + 1} / ${orderedCards.length}`;
+  const matchingIndexes = useMemo(
+    () =>
+      orderedCards
+        .map((card, index) => ({ card, index }))
+        .filter(({ card }) => {
+          const categoryMatches = selectedCategory === "all" || card.category === selectedCategory;
+          const levelMatches = selectedLevel === "all" || card.level === selectedLevel;
+          return categoryMatches && levelMatches;
+        })
+        .map(({ index }) => index),
+    [orderedCards, selectedCategory, selectedLevel],
+  );
+  const filteredPosition = matchingIndexes.indexOf(currentIndex);
+  const progressText =
+    selectedCategory === "all" && selectedLevel === "all"
+      ? `${currentIndex + 1} / ${orderedCards.length}`
+      : filteredPosition >= 0
+        ? `${filteredPosition + 1} / ${matchingIndexes.length}`
+        : `0 / ${matchingIndexes.length}`;
   const partnerJoined = presenceCount >= 2;
 
   useEffect(() => {
@@ -356,6 +389,44 @@ function RoomScreen({ roomCode }: { roomCode: string }) {
     setRoom(result.data as Room);
   }
 
+  function indexForFilter(category: CategoryFilter, level: LevelFilter) {
+    const foundIndex = orderedCards.findIndex((card) => {
+      const categoryMatches = category === "all" || card.category === category;
+      const levelMatches = level === "all" || card.level === level;
+      return categoryMatches && levelMatches;
+    });
+    return foundIndex >= 0 ? foundIndex : currentIndex;
+  }
+
+  function moveInFilter(direction: 1 | -1) {
+    if (matchingIndexes.length === 0) return;
+    const position = matchingIndexes.indexOf(currentIndex);
+    const fallbackPosition = direction > 0 ? -1 : 0;
+    const nextPosition = clampIndex(position >= 0 ? position + direction : fallbackPosition, matchingIndexes.length);
+    updateIndex(matchingIndexes[nextPosition]);
+  }
+
+  function randomInFilter() {
+    if (matchingIndexes.length === 0) return;
+    const randomIndex = crypto.getRandomValues(new Uint32Array(1))[0] % matchingIndexes.length;
+    updateIndex(matchingIndexes[randomIndex]);
+  }
+
+  function resetInFilter() {
+    if (matchingIndexes.length === 0) return;
+    updateIndex(matchingIndexes[0]);
+  }
+
+  function changeCategory(category: CategoryFilter) {
+    setSelectedCategory(category);
+    updateIndex(indexForFilter(category, selectedLevel));
+  }
+
+  function changeLevel(level: LevelFilter) {
+    setSelectedLevel(level);
+    updateIndex(indexForFilter(selectedCategory, level));
+  }
+
   async function copyShareUrl() {
     const copied = await copyText(roomUrl(roomCode));
     setToast(
@@ -398,19 +469,30 @@ function RoomScreen({ roomCode }: { roomCode: string }) {
 
       {toast ? <div className={`notice ${toast.tone}`}>{toast.message}</div> : null}
 
+      <CardFilters
+        selectedCategory={selectedCategory}
+        selectedLevel={selectedLevel}
+        onCategoryChange={changeCategory}
+        onLevelChange={changeLevel}
+        matchingCount={matchingIndexes.length}
+      />
+
       <QuestionCardView card={currentCard} progressText={progressText} />
 
       <div className="controls">
-        <button onClick={() => updateIndex(currentIndex - 1)} disabled={saving || currentIndex === 0}>
+        <button onClick={() => moveInFilter(-1)} disabled={saving || matchingIndexes.length === 0 || filteredPosition === 0}>
           戻る
         </button>
-        <button onClick={() => updateIndex(currentIndex + 1)} disabled={saving}>
+        <button onClick={() => moveInFilter(1)} disabled={saving || matchingIndexes.length === 0}>
           次へ
         </button>
-        <button onClick={() => updateIndex(currentIndex + 1)} disabled={saving}>
+        <button onClick={() => moveInFilter(1)} disabled={saving || matchingIndexes.length === 0}>
           パス
         </button>
-        <button onClick={() => updateIndex(0)} disabled={saving || currentIndex === 0}>
+        <button onClick={randomInFilter} disabled={saving || matchingIndexes.length === 0}>
+          ランダム
+        </button>
+        <button onClick={resetInFilter} disabled={saving || matchingIndexes.length === 0 || filteredPosition === 0}>
           最初から
         </button>
       </div>
@@ -418,6 +500,68 @@ function RoomScreen({ roomCode }: { roomCode: string }) {
       <button className="ghost-button" onClick={copyShareUrl}>
         共有URLをコピー
       </button>
+    </section>
+  );
+}
+
+function CardFilters({
+  selectedCategory,
+  selectedLevel,
+  onCategoryChange,
+  onLevelChange,
+  matchingCount,
+}: {
+  selectedCategory: CategoryFilter;
+  selectedLevel: LevelFilter;
+  onCategoryChange: (category: CategoryFilter) => void;
+  onLevelChange: (level: LevelFilter) => void;
+  matchingCount: number;
+}) {
+  return (
+    <section className="filter-panel" aria-label="カード条件">
+      <div className="filter-row">
+        <div className="filter-title">カテゴリ</div>
+        <div className="chip-list">
+          <button
+            className={selectedCategory === "all" ? "chip selected" : "chip"}
+            onClick={() => onCategoryChange("all")}
+          >
+            すべて
+          </button>
+          {categoryOptions.map(([category, label]) => (
+            <button
+              key={category}
+              className={selectedCategory === category ? "chip selected" : "chip"}
+              onClick={() => onCategoryChange(category)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="filter-row">
+        <div className="filter-title">レベル</div>
+        <div className="chip-list">
+          <button
+            className={selectedLevel === "all" ? "chip selected" : "chip"}
+            onClick={() => onLevelChange("all")}
+          >
+            すべて
+          </button>
+          {levelOptions.map((level) => (
+            <button
+              key={level}
+              className={selectedLevel === level ? "chip selected" : "chip"}
+              onClick={() => onLevelChange(level)}
+            >
+              {level}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="filter-count">{matchingCount}問</div>
     </section>
   );
 }

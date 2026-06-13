@@ -126,7 +126,8 @@ h2 {
 
 .ghost-button,
 .controls button,
-.back-link {
+.back-link,
+.chip {
   background: rgba(255, 255, 255, 0.1);
   color: #fff6fa;
 }
@@ -229,10 +230,57 @@ h2 {
   width: fit-content;
 }
 
+.filter-panel {
+  display: grid;
+  gap: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 14px;
+}
+
+.filter-row {
+  display: grid;
+  gap: 8px;
+}
+
+.filter-title,
+.filter-count {
+  color: rgba(255, 246, 250, 0.66);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.chip-list {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.chip-list::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  min-height: 38px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 0 14px;
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.chip.selected {
+  background: #fff6fa;
+  color: #28121f;
+}
+
 .question-card {
   display: flex;
   flex: 1;
-  min-height: 390px;
+  min-height: 320px;
   flex-direction: column;
   justify-content: center;
   gap: 26px;
@@ -273,8 +321,12 @@ h2 {
 
 .controls {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+}
+
+.controls button:nth-child(5) {
+  grid-column: 1 / -1;
 }
 
 .controls button {
