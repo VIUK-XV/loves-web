@@ -50,6 +50,7 @@ declare global {
       ) => number;
       reset: (widgetId?: number) => void;
     };
+    __lovesRecaptchaReady?: () => void;
   }
 }
 
@@ -148,33 +149,59 @@ function readableErrorMessage(error: unknown, fallback: string) {
   return message || fallback;
 }
 
-function appendRecaptchaScript(src: string) {
-  if (window.grecaptcha) return Promise.resolve();
+function waitForGrecaptcha() {
+  return new Promise<void>((resolve, reject) => {
+    if (window.grecaptcha) {
+      resolve();
+      return;
+    }
 
-  const existingScript = document.querySelector<HTMLScriptElement>(`script[src="${src}"]`);
-  if (existingScript) {
-    return new Promise<void>((resolve, reject) => {
-      existingScript.addEventListener("load", () => resolve(), { once: true });
-      existingScript.addEventListener("error", () => reject(), { once: true });
-    });
-  }
+    let attempts = 0;
+    const timer = window.setInterval(() => {
+      attempts += 1;
+      if (window.grecaptcha) {
+        window.clearInterval(timer);
+        resolve();
+        return;
+      }
+      if (attempts >= 80) {
+        window.clearInterval(timer);
+        reject(new Error("reCAPTCHAの初期化が終わりませんでした。"));
+      }
+    }, 100);
+  });
+}
+
+function appendRecaptchaScript(host: string) {
+  if (window.grecaptcha) return Promise.resolve();
 
   return new Promise<void>((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = src;
+    const callbackName = "__lovesRecaptchaReady";
+    const timeout = window.setTimeout(() => {
+      reject(new Error("reCAPTCHAを読み込めませんでした。"));
+    }, 10000);
+
+    window.__lovesRecaptchaReady = () => {
+      window.clearTimeout(timeout);
+      resolve();
+    };
+    script.src = `${host}/recaptcha/api.js?onload=${callbackName}&render=explicit&hl=ja`;
     script.async = true;
     script.defer = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject();
+    script.onerror = () => {
+      window.clearTimeout(timeout);
+      reject(new Error("reCAPTCHAを読み込めませんでした。"));
+    };
     document.head.appendChild(script);
-  });
+  }).then(waitForGrecaptcha);
 }
 
 function loadRecaptchaScript() {
   if (window.grecaptcha) return Promise.resolve();
   if (!recaptchaLoadPromise) {
-    recaptchaLoadPromise = appendRecaptchaScript("https://www.google.com/recaptcha/api.js?render=explicit")
-      .catch(() => appendRecaptchaScript("https://www.recaptcha.net/recaptcha/api.js?render=explicit"));
+    recaptchaLoadPromise = appendRecaptchaScript("https://www.google.com")
+      .catch(() => appendRecaptchaScript("https://www.recaptcha.net"));
   }
   return recaptchaLoadPromise;
 }
