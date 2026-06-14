@@ -700,6 +700,12 @@ function RoomScreen({ roomCode }: { roomCode: string }) {
     setDraftIndex(matchingIndexes[nextPosition]);
   }
 
+  function randomDraft() {
+    if (matchingIndexes.length === 0) return;
+    const randomPosition = crypto.getRandomValues(new Uint32Array(1))[0] % matchingIndexes.length;
+    setDraftIndex(matchingIndexes[randomPosition]);
+  }
+
   async function copyShareUrl() {
     const copied = await copyText(roomUrl(roomCode));
     setToast(
@@ -801,6 +807,7 @@ function RoomScreen({ roomCode }: { roomCode: string }) {
           draftCard={draftCard}
           draftPosition={draftPosition}
           onMoveDraft={moveDraft}
+          onRandomDraft={randomDraft}
           onSetAgendaQuestion={setAgendaQuestion}
           saving={saving}
         />
@@ -845,6 +852,7 @@ function CardFilters({
   draftCard,
   draftPosition,
   onMoveDraft,
+  onRandomDraft,
   onSetAgendaQuestion,
   saving,
 }: {
@@ -856,6 +864,7 @@ function CardFilters({
   draftCard: QuestionCard | undefined;
   draftPosition: number;
   onMoveDraft: (direction: 1 | -1) => void;
+  onRandomDraft: () => void;
   onSetAgendaQuestion: () => void;
   saving: boolean;
 }) {
@@ -918,6 +927,9 @@ function CardFilters({
             </button>
             <button onClick={() => onMoveDraft(1)} disabled={saving || draftPosition >= matchingCount - 1}>
               次の候補
+            </button>
+            <button className="wide-button" onClick={onRandomDraft} disabled={saving || matchingCount === 0}>
+              この条件でランダム
             </button>
           </div>
         </article>

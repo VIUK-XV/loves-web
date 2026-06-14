@@ -392,6 +392,11 @@ h2 {
   font-weight: 900;
 }
 
+.agenda-preview-controls .wide-button {
+  grid-column: 1 / -1;
+  background: rgba(255, 255, 255, 0.16);
+}
+
 .chip-list {
   display: flex;
   gap: 8px;
