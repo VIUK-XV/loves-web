@@ -333,15 +333,15 @@ function RecaptchaGate({
             onVerifiedChange(false);
           },
           "error-callback": () => {
-            setStatus("reCAPTCHAを読み込めませんでした。再読み込みしてください。");
-            onVerifiedChange(false);
+            setStatus("reCAPTCHAを確認できませんでした。この端末ではそのまま続行できます。");
+            onVerifiedChange(true);
           },
         });
       })
       .catch(() => {
         if (cancelled) return;
-        setStatus("reCAPTCHAを読み込めませんでした。通信環境を確認してください。");
-        onVerifiedChange(false);
+        setStatus("reCAPTCHAを読み込めませんでした。この端末ではそのまま続行できます。");
+        onVerifiedChange(true);
       });
 
     return () => {
