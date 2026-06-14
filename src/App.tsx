@@ -24,7 +24,25 @@ type CategoryFilter = "all" | CardCategory;
 type LevelFilter = "all" | CardLevel;
 
 const categoryOptions = Object.entries(categoryLabels) as [CardCategory, string][];
-const levelOptions: CardLevel[] = [1, 2, 3];
+const levelOptions: CardLevel[] = [1, 2, 3, 4];
+const recaptchaSiteKey = "6LdDHx4tAAAAACDYdQIMSpZyFuWr6BxDXU0xG2ec";
+
+declare global {
+  interface Window {
+    grecaptcha?: {
+      render: (
+        element: string | HTMLElement,
+        params: {
+          sitekey: string;
+          callback: (token: string) => void;
+          "expired-callback": () => void;
+          "error-callback": () => void;
+        },
+      ) => number;
+      reset: (widgetId?: number) => void;
+    };
+  }
+}
 
 function parseRoute(): Route {
   const hash = window.location.hash.replace(/^#\/?/, "");
@@ -113,6 +131,29 @@ function readableErrorMessage(error: unknown, fallback: string) {
   return message || fallback;
 }
 
+function loadRecaptchaScript() {
+  const existingScript = document.querySelector<HTMLScriptElement>(
+    'script[src^="https://www.google.com/recaptcha/api.js"]',
+  );
+  if (window.grecaptcha) return Promise.resolve();
+  if (existingScript) {
+    return new Promise<void>((resolve, reject) => {
+      existingScript.addEventListener("load", () => resolve(), { once: true });
+      existingScript.addEventListener("error", () => reject(), { once: true });
+    });
+  }
+
+  return new Promise<void>((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://www.google.com/recaptcha/api.js?render=explicit";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject();
+    document.head.appendChild(script);
+  });
+}
+
 export function App() {
   const [route, setRoute] = useState<Route>(() => parseRoute());
 
@@ -133,11 +174,17 @@ function HomeScreen() {
   const [roomCode, setRoomCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<ToastState | null>(null);
+  const [captchaVerified, setCaptchaVerified] = useState(false);
 
   const showError = (message: string) => setToast({ message, tone: "error" });
   const showSuccess = (message: string) => setToast({ message, tone: "success" });
 
   async function createRoom() {
+    if (!captchaVerified) {
+      showError("「私はロボットではありません」をチェックしてください。");
+      return;
+    }
+
     if (!supabase || !isSupabaseConfigured) {
       showError("SupabaseのURLとanon keyを設定してください。");
       return;
@@ -177,6 +224,11 @@ function HomeScreen() {
 
   function joinRoom(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!captchaVerified) {
+      showError("「私はロボットではありません」をチェックしてください。");
+      return;
+    }
+
     const code = extractRoomCode(roomCode);
     if (!code) {
       showError("部屋コードを入力してください。");
@@ -207,6 +259,8 @@ function HomeScreen() {
       ) : null}
 
       {toast ? <div className={`notice ${toast.tone}`}>{toast.message}</div> : null}
+
+      <RecaptchaGate onVerifiedChange={setCaptchaVerified} />
 
       <div className="action-stack">
         <button className="primary-button" onClick={createRoom} disabled={loading}>
@@ -242,6 +296,67 @@ function HomeScreen() {
         </ol>
         <p>回答は保存しません。共有されるのは、今どのカードを見ているかだけです。</p>
       </div>
+    </section>
+  );
+}
+
+function RecaptchaGate({
+  onVerifiedChange,
+}: {
+  onVerifiedChange: (verified: boolean) => void;
+}) {
+  const elementId = useMemo(
+    () => `recaptcha-${Math.random().toString(36).slice(2)}`,
+    [],
+  );
+  const [status, setStatus] = useState("チェックしてから部屋を作成・入室できます。");
+
+  useEffect(() => {
+    let cancelled = false;
+    let widgetId: number | null = null;
+
+    onVerifiedChange(false);
+    loadRecaptchaScript()
+      .then(() => {
+        if (cancelled) return;
+        const target = document.getElementById(elementId);
+        if (!target || !window.grecaptcha || target.childElementCount > 0) return;
+
+        widgetId = window.grecaptcha.render(target, {
+          sitekey: recaptchaSiteKey,
+          callback: () => {
+            setStatus("確認済みです。");
+            onVerifiedChange(true);
+          },
+          "expired-callback": () => {
+            setStatus("期限切れです。もう一度チェックしてください。");
+            onVerifiedChange(false);
+          },
+          "error-callback": () => {
+            setStatus("reCAPTCHAを読み込めませんでした。再読み込みしてください。");
+            onVerifiedChange(false);
+          },
+        });
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setStatus("reCAPTCHAを読み込めませんでした。通信環境を確認してください。");
+        onVerifiedChange(false);
+      });
+
+    return () => {
+      cancelled = true;
+      onVerifiedChange(false);
+      if (widgetId !== null) {
+        window.grecaptcha?.reset(widgetId);
+      }
+    };
+  }, [elementId, onVerifiedChange]);
+
+  return (
+    <section className="recaptcha-panel">
+      <div id={elementId} className="recaptcha-box" />
+      <p>{status}</p>
     </section>
   );
 }
