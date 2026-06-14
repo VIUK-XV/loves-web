@@ -137,7 +137,8 @@ h2 {
 .ghost-button,
 .join-row button,
 .controls button,
-.answer-form button {
+.answer-form button,
+.agenda-button {
   min-height: 48px;
   border-radius: 14px;
   font-weight: 800;
@@ -357,6 +358,40 @@ h2 {
   font-weight: 900;
 }
 
+.agenda-button {
+  background: linear-gradient(145deg, #ff6f91, #f0446d);
+  color: white;
+}
+
+.agenda-preview {
+  display: grid;
+  gap: 12px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.18);
+  padding: 14px;
+}
+
+.agenda-preview p {
+  color: #fff6fa;
+  font-size: 1.05rem;
+  font-weight: 900;
+  line-height: 1.65;
+}
+
+.agenda-preview-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.agenda-preview-controls button {
+  min-height: 42px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff6fa;
+  font-weight: 900;
+}
+
 .chip-list {
   display: flex;
   gap: 8px;
@@ -431,16 +466,11 @@ h2 {
   gap: 10px;
 }
 
-.controls button:nth-child(5) {
-  grid-column: 1 / -1;
-}
-
 .controls button {
   background: rgba(255, 255, 255, 0.1);
 }
 
-.controls button:nth-child(2),
-.controls button:nth-child(3) {
+.controls button:nth-child(2) {
   background: linear-gradient(145deg, #ff6f91, #f0446d);
 }
 

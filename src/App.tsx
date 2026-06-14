@@ -425,7 +425,9 @@ function RoomScreen({ roomCode }: { roomCode: string }) {
   const [saving, setSaving] = useState(false);
   const [presenceCount, setPresenceCount] = useState(1);
   const [toast, setToast] = useState<ToastState | null>(null);
+  const [draftCategory, setDraftCategory] = useState<CategoryFilter>("all");
   const [selectedLevel, setSelectedLevel] = useState<LevelFilter>("all");
+  const [draftIndex, setDraftIndex] = useState(0);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [answers, setAnswers] = useState<AnswerRow[]>([]);
   const [answerText, setAnswerText] = useState("");
@@ -438,27 +440,22 @@ function RoomScreen({ roomCode }: { roomCode: string }) {
 
   const currentIndex = room ? clampIndex(room.current_index, orderedCards.length) : 0;
   const currentCard = orderedCards[currentIndex];
-  const selectedCategory = normalizeCategory(room?.selected_category);
   const isRoomCreator = Boolean(room && currentUserId === room.created_by);
   const matchingIndexes = useMemo(
     () =>
       orderedCards
         .map((card, index) => ({ card, index }))
         .filter(({ card }) => {
-          const categoryMatches = selectedCategory === "all" || card.category === selectedCategory;
+          const categoryMatches = draftCategory === "all" || card.category === draftCategory;
           const levelMatches = selectedLevel === "all" || card.level === selectedLevel;
           return categoryMatches && levelMatches;
         })
         .map(({ index }) => index),
-    [orderedCards, selectedCategory, selectedLevel],
+    [orderedCards, draftCategory, selectedLevel],
   );
-  const filteredPosition = matchingIndexes.indexOf(currentIndex);
-  const progressText =
-    selectedCategory === "all" && selectedLevel === "all"
-      ? `${currentIndex + 1} / ${orderedCards.length}`
-      : filteredPosition >= 0
-        ? `${filteredPosition + 1} / ${matchingIndexes.length}`
-        : `0 / ${matchingIndexes.length}`;
+  const draftPosition = matchingIndexes.indexOf(draftIndex);
+  const draftCard = orderedCards[clampIndex(draftIndex, orderedCards.length)];
+  const progressText = `${currentIndex + 1} / ${orderedCards.length}`;
   const partnerJoined = presenceCount >= 2;
   const currentCardAnswers = useMemo(
     () => answers.filter((answer) => answer.card_index === currentIndex),
@@ -466,6 +463,7 @@ function RoomScreen({ roomCode }: { roomCode: string }) {
   );
   const ownAnswer = currentCardAnswers.find((answer) => answer.user_id === currentUserId);
   const canRevealAnswers = currentCardAnswers.length >= 2;
+  const canAdvance = canRevealAnswers;
 
   useEffect(() => {
     let mounted = true;
@@ -616,6 +614,13 @@ function RoomScreen({ roomCode }: { roomCode: string }) {
     setAnswerText(ownAnswer?.answer ?? "");
   }, [currentIndex, ownAnswer?.answer]);
 
+  useEffect(() => {
+    if (matchingIndexes.length === 0) return;
+    if (!matchingIndexes.includes(draftIndex)) {
+      setDraftIndex(matchingIndexes[0]);
+    }
+  }, [draftIndex, matchingIndexes]);
+
   async function updateIndex(nextIndex: number) {
     if (!room || !supabase) return;
 
@@ -650,36 +655,25 @@ function RoomScreen({ roomCode }: { roomCode: string }) {
     return foundIndex >= 0 ? foundIndex : currentIndex;
   }
 
-  function moveInFilter(direction: 1 | -1) {
-    if (matchingIndexes.length === 0) return;
-    const position = matchingIndexes.indexOf(currentIndex);
-    const fallbackPosition = direction > 0 ? -1 : 0;
-    const nextPosition = clampIndex(position >= 0 ? position + direction : fallbackPosition, matchingIndexes.length);
-    updateIndex(matchingIndexes[nextPosition]);
+  function moveInOrder(direction: 1 | -1) {
+    if (!canAdvance) {
+      setToast({ message: "2人とも回答すると次に進めます。", tone: "error" });
+      return;
+    }
+    updateIndex(currentIndex + direction);
   }
 
-  function randomInFilter() {
-    if (matchingIndexes.length === 0) return;
-    const randomIndex = crypto.getRandomValues(new Uint32Array(1))[0] % matchingIndexes.length;
-    updateIndex(matchingIndexes[randomIndex]);
-  }
+  async function setAgendaQuestion() {
+    if (!room || !supabase || !isRoomCreator || !draftCard) return;
 
-  function resetInFilter() {
-    if (matchingIndexes.length === 0) return;
-    updateIndex(matchingIndexes[0]);
-  }
-
-  async function changeCategory(category: CategoryFilter) {
-    if (!room || !supabase || !isRoomCreator) return;
-
-    const nextIndex = indexForFilter(category, selectedLevel);
+    const nextIndex = clampIndex(draftIndex, orderedCards.length);
     setSaving(true);
     setToast(null);
-    setRoom({ ...room, selected_category: category, current_index: nextIndex });
+    setRoom({ ...room, selected_category: draftCategory, current_index: nextIndex });
 
     const result = await supabase
       .from("rooms")
-      .update({ selected_category: category, current_index: nextIndex })
+      .update({ selected_category: draftCategory, current_index: nextIndex })
       .eq("id", room.id)
       .select()
       .single();
@@ -687,16 +681,23 @@ function RoomScreen({ roomCode }: { roomCode: string }) {
     setSaving(false);
 
     if (result.error) {
-      setToast({ message: readableErrorMessage(result.error, "カテゴリを同期できませんでした。"), tone: "error" });
+      setToast({ message: readableErrorMessage(result.error, "議題を同期できませんでした。"), tone: "error" });
       return;
     }
 
     setRoom(result.data as Room);
+    setToast({ message: "この質問を議題にしました。", tone: "success" });
   }
 
   function changeLevel(level: LevelFilter) {
     setSelectedLevel(level);
-    updateIndex(indexForFilter(selectedCategory, level));
+  }
+
+  function moveDraft(direction: 1 | -1) {
+    if (matchingIndexes.length === 0) return;
+    const currentPosition = matchingIndexes.indexOf(draftIndex);
+    const nextPosition = clampIndex(currentPosition >= 0 ? currentPosition + direction : 0, matchingIndexes.length);
+    setDraftIndex(matchingIndexes[nextPosition]);
   }
 
   async function copyShareUrl() {
@@ -790,16 +791,22 @@ function RoomScreen({ roomCode }: { roomCode: string }) {
 
       {toast ? <div className={`notice ${toast.tone}`}>{toast.message}</div> : null}
 
-      <CardFilters
-        selectedCategory={selectedCategory}
-        selectedLevel={selectedLevel}
-        onCategoryChange={changeCategory}
-        onLevelChange={changeLevel}
-        matchingCount={matchingIndexes.length}
-        canChangeCategory={isRoomCreator}
-      />
+      {isRoomCreator ? (
+        <CardFilters
+          selectedCategory={draftCategory}
+          selectedLevel={selectedLevel}
+          onCategoryChange={setDraftCategory}
+          onLevelChange={changeLevel}
+          matchingCount={matchingIndexes.length}
+          draftCard={draftCard}
+          draftPosition={draftPosition}
+          onMoveDraft={moveDraft}
+          onSetAgendaQuestion={setAgendaQuestion}
+          saving={saving}
+        />
+      ) : null}
 
-      <QuestionCardView card={currentCard} progressText={progressText} />
+      <QuestionCardView card={currentCard} progressText={progressText} showDetails={isRoomCreator} />
 
       <AnswerPanel
         answerText={answerText}
@@ -814,20 +821,11 @@ function RoomScreen({ roomCode }: { roomCode: string }) {
       />
 
       <div className="controls">
-        <button onClick={() => moveInFilter(-1)} disabled={saving || matchingIndexes.length === 0 || filteredPosition === 0}>
+        <button onClick={() => moveInOrder(-1)} disabled={saving || !canAdvance || currentIndex === 0}>
           戻る
         </button>
-        <button onClick={() => moveInFilter(1)} disabled={saving || matchingIndexes.length === 0}>
+        <button onClick={() => moveInOrder(1)} disabled={saving || !canAdvance || currentIndex >= orderedCards.length - 1}>
           次へ
-        </button>
-        <button onClick={() => moveInFilter(1)} disabled={saving || matchingIndexes.length === 0}>
-          パス
-        </button>
-        <button onClick={randomInFilter} disabled={saving || matchingIndexes.length === 0}>
-          ランダム
-        </button>
-        <button onClick={resetInFilter} disabled={saving || matchingIndexes.length === 0 || filteredPosition === 0}>
-          最初から
         </button>
       </div>
 
@@ -844,24 +842,31 @@ function CardFilters({
   onCategoryChange,
   onLevelChange,
   matchingCount,
-  canChangeCategory,
+  draftCard,
+  draftPosition,
+  onMoveDraft,
+  onSetAgendaQuestion,
+  saving,
 }: {
   selectedCategory: CategoryFilter;
   selectedLevel: LevelFilter;
   onCategoryChange: (category: CategoryFilter) => void;
   onLevelChange: (level: LevelFilter) => void;
   matchingCount: number;
-  canChangeCategory: boolean;
+  draftCard: QuestionCard | undefined;
+  draftPosition: number;
+  onMoveDraft: (direction: 1 | -1) => void;
+  onSetAgendaQuestion: () => void;
+  saving: boolean;
 }) {
   return (
     <section className="filter-panel" aria-label="カード条件">
       <div className="filter-row">
-        <div className="filter-title">カテゴリ {canChangeCategory ? "" : "（作成者のみ変更）"}</div>
+        <div className="filter-title">カテゴリ</div>
         <div className="chip-list">
           <button
             className={selectedCategory === "all" ? "chip selected" : "chip"}
             onClick={() => onCategoryChange("all")}
-            disabled={!canChangeCategory}
           >
             すべて
           </button>
@@ -870,7 +875,6 @@ function CardFilters({
               key={category}
               className={selectedCategory === category ? "chip selected" : "chip"}
               onClick={() => onCategoryChange(category)}
-              disabled={!canChangeCategory}
             >
               {label}
             </button>
@@ -900,6 +904,27 @@ function CardFilters({
       </div>
 
       <div className="filter-count">{matchingCount}問</div>
+      {draftCard ? (
+        <article className="agenda-preview">
+          <div className="card-meta">
+            <span>{categoryLabels[draftCard.category]}</span>
+            <span>{levelLabels[draftCard.level]}</span>
+            <span>{draftPosition >= 0 ? `${draftPosition + 1} / ${matchingCount}` : `1 / ${matchingCount}`}</span>
+          </div>
+          <p>{draftCard.text}</p>
+          <div className="agenda-preview-controls">
+            <button onClick={() => onMoveDraft(-1)} disabled={saving || draftPosition <= 0}>
+              前の候補
+            </button>
+            <button onClick={() => onMoveDraft(1)} disabled={saving || draftPosition >= matchingCount - 1}>
+              次の候補
+            </button>
+          </div>
+        </article>
+      ) : null}
+      <button className="agenda-button" onClick={onSetAgendaQuestion} disabled={saving || matchingCount === 0}>
+        この質問を議題にする
+      </button>
     </section>
   );
 }
@@ -965,12 +990,24 @@ function AnswerPanel({
   );
 }
 
-function QuestionCardView({ card, progressText }: { card: QuestionCard; progressText: string }) {
+function QuestionCardView({
+  card,
+  progressText,
+  showDetails,
+}: {
+  card: QuestionCard;
+  progressText: string;
+  showDetails: boolean;
+}) {
   return (
     <article className="question-card">
       <div className="card-meta">
-        <span>{categoryLabels[card.category]}</span>
-        <span>{levelLabels[card.level]}</span>
+        {showDetails ? (
+          <>
+            <span>{categoryLabels[card.category]}</span>
+            <span>{levelLabels[card.level]}</span>
+          </>
+        ) : null}
         <span>{progressText}</span>
       </div>
 
