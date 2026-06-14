@@ -22,10 +22,19 @@ type ToastState = {
 
 type CategoryFilter = "all" | CardCategory;
 type LevelFilter = "all" | CardLevel;
+type AnswerRow = {
+  room_id: string;
+  card_index: number;
+  user_id: string;
+  answer: string;
+  created_at: string;
+  updated_at: string;
+};
 
 const categoryOptions = Object.entries(categoryLabels) as [CardCategory, string][];
 const levelOptions: CardLevel[] = [1, 2, 3, 4];
 const recaptchaSiteKey = "6LdDHx4tAAAAACDYdQIMSpZyFuWr6BxDXU0xG2ec";
+let recaptchaLoadPromise: Promise<void> | null = null;
 
 declare global {
   interface Window {
@@ -124,6 +133,14 @@ function readableErrorMessage(error: unknown, fallback: string) {
     return "SupabaseにSQLがまだ適用されていません。web/supabase/schema.sql をSQL Editorで実行してください。";
   }
 
+  if (message.includes("room_answers") || message.includes("selected_category")) {
+    return "新しいSQLがまだ適用されていません。web/supabase/schema.sql をSQL Editorで実行してください。";
+  }
+
+  if (message.includes("部屋は見つかりません")) {
+    return "この部屋は見つかりませんでした。部屋コードを確認してください。";
+  }
+
   if (message.includes("JWT") || message.includes("Invalid API key")) {
     return "SupabaseのURLかanon keyが正しくありません。設定を確認してください。";
   }
@@ -131,11 +148,10 @@ function readableErrorMessage(error: unknown, fallback: string) {
   return message || fallback;
 }
 
-function loadRecaptchaScript() {
-  const existingScript = document.querySelector<HTMLScriptElement>(
-    'script[src^="https://www.google.com/recaptcha/api.js"]',
-  );
+function appendRecaptchaScript(src: string) {
   if (window.grecaptcha) return Promise.resolve();
+
+  const existingScript = document.querySelector<HTMLScriptElement>(`script[src="${src}"]`);
   if (existingScript) {
     return new Promise<void>((resolve, reject) => {
       existingScript.addEventListener("load", () => resolve(), { once: true });
@@ -145,13 +161,27 @@ function loadRecaptchaScript() {
 
   return new Promise<void>((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = "https://www.google.com/recaptcha/api.js?render=explicit";
+    script.src = src;
     script.async = true;
     script.defer = true;
     script.onload = () => resolve();
     script.onerror = () => reject();
     document.head.appendChild(script);
   });
+}
+
+function loadRecaptchaScript() {
+  if (window.grecaptcha) return Promise.resolve();
+  if (!recaptchaLoadPromise) {
+    recaptchaLoadPromise = appendRecaptchaScript("https://www.google.com/recaptcha/api.js?render=explicit")
+      .catch(() => appendRecaptchaScript("https://www.recaptcha.net/recaptcha/api.js?render=explicit"));
+  }
+  return recaptchaLoadPromise;
+}
+
+function normalizeCategory(value: string | null | undefined): CategoryFilter {
+  if (!value || value === "all") return "all";
+  return Object.prototype.hasOwnProperty.call(categoryLabels, value) ? (value as CardCategory) : "all";
 }
 
 export function App() {
@@ -368,8 +398,12 @@ function RoomScreen({ roomCode }: { roomCode: string }) {
   const [saving, setSaving] = useState(false);
   const [presenceCount, setPresenceCount] = useState(1);
   const [toast, setToast] = useState<ToastState | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>("all");
   const [selectedLevel, setSelectedLevel] = useState<LevelFilter>("all");
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [answers, setAnswers] = useState<AnswerRow[]>([]);
+  const [answerText, setAnswerText] = useState("");
+  const [answerSaving, setAnswerSaving] = useState(false);
+  const [answerStatus, setAnswerStatus] = useState<string | null>(null);
 
   const orderedCards = useMemo(() => {
     return room ? shuffleWithSeed(cards, room.seed) : cards;
@@ -377,6 +411,8 @@ function RoomScreen({ roomCode }: { roomCode: string }) {
 
   const currentIndex = room ? clampIndex(room.current_index, orderedCards.length) : 0;
   const currentCard = orderedCards[currentIndex];
+  const selectedCategory = normalizeCategory(room?.selected_category);
+  const isRoomCreator = Boolean(room && currentUserId === room.created_by);
   const matchingIndexes = useMemo(
     () =>
       orderedCards
@@ -397,6 +433,12 @@ function RoomScreen({ roomCode }: { roomCode: string }) {
         ? `${filteredPosition + 1} / ${matchingIndexes.length}`
         : `0 / ${matchingIndexes.length}`;
   const partnerJoined = presenceCount >= 2;
+  const currentCardAnswers = useMemo(
+    () => answers.filter((answer) => answer.card_index === currentIndex),
+    [answers, currentIndex],
+  );
+  const ownAnswer = currentCardAnswers.find((answer) => answer.user_id === currentUserId);
+  const canRevealAnswers = currentCardAnswers.length >= 2;
 
   useEffect(() => {
     let mounted = true;
@@ -415,6 +457,7 @@ function RoomScreen({ roomCode }: { roomCode: string }) {
 
       try {
         const user = await ensureAnonymousSession();
+        setCurrentUserId(user.id);
         const result = await supabase.rpc("join_room", {
           p_room_code: roomCode,
         });
@@ -424,7 +467,7 @@ function RoomScreen({ roomCode }: { roomCode: string }) {
         }
 
         const joinedRoom = result.data as Room | null;
-        if (!joinedRoom) {
+        if (!joinedRoom || !joinedRoom.id) {
           throw new Error("この部屋は見つかりませんでした。");
         }
 
@@ -492,6 +535,60 @@ function RoomScreen({ roomCode }: { roomCode: string }) {
     };
   }, [roomCode]);
 
+  useEffect(() => {
+    if (!room?.id || !supabase) return;
+
+    let mounted = true;
+    const roomId = room.id;
+    const supabaseClient = supabase;
+
+    async function loadAnswers() {
+      const result = await supabaseClient
+        .from("room_answers")
+        .select("*")
+        .eq("room_id", roomId)
+        .order("created_at", { ascending: true });
+
+      if (!mounted) return;
+
+      if (result.error) {
+        setAnswerStatus(readableErrorMessage(result.error, "回答を読み込めませんでした。"));
+        setAnswers([]);
+        return;
+      }
+
+      setAnswerStatus(null);
+      setAnswers((result.data as AnswerRow[] | null) ?? []);
+    }
+
+    loadAnswers();
+
+    const answersChannel = supabaseClient
+      .channel(`room-answers-${roomId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "room_answers",
+          filter: `room_id=eq.${roomId}`,
+        },
+        () => {
+          loadAnswers();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      mounted = false;
+      supabaseClient.removeChannel(answersChannel);
+    };
+  }, [room?.id]);
+
+  useEffect(() => {
+    setAnswerText(ownAnswer?.answer ?? "");
+  }, [currentIndex, ownAnswer?.answer]);
+
   async function updateIndex(nextIndex: number) {
     if (!room || !supabase) return;
 
@@ -545,9 +642,29 @@ function RoomScreen({ roomCode }: { roomCode: string }) {
     updateIndex(matchingIndexes[0]);
   }
 
-  function changeCategory(category: CategoryFilter) {
-    setSelectedCategory(category);
-    updateIndex(indexForFilter(category, selectedLevel));
+  async function changeCategory(category: CategoryFilter) {
+    if (!room || !supabase || !isRoomCreator) return;
+
+    const nextIndex = indexForFilter(category, selectedLevel);
+    setSaving(true);
+    setToast(null);
+    setRoom({ ...room, selected_category: category, current_index: nextIndex });
+
+    const result = await supabase
+      .from("rooms")
+      .update({ selected_category: category, current_index: nextIndex })
+      .eq("id", room.id)
+      .select()
+      .single();
+
+    setSaving(false);
+
+    if (result.error) {
+      setToast({ message: readableErrorMessage(result.error, "カテゴリを同期できませんでした。"), tone: "error" });
+      return;
+    }
+
+    setRoom(result.data as Room);
   }
 
   function changeLevel(level: LevelFilter) {
@@ -562,6 +679,55 @@ function RoomScreen({ roomCode }: { roomCode: string }) {
         ? { message: "共有URLをコピーしました。", tone: "success" }
         : { message: "コピーできませんでした。URLを長押ししてコピーしてください。", tone: "error" },
     );
+  }
+
+  async function submitAnswer(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!room || !supabase || !currentUserId) return;
+
+    const trimmedAnswer = answerText.trim();
+    if (!trimmedAnswer) {
+      setToast({ message: "回答を入力してください。", tone: "error" });
+      return;
+    }
+
+    setAnswerSaving(true);
+    setToast(null);
+
+    const result = await supabase
+      .from("room_answers")
+      .upsert(
+        {
+          room_id: room.id,
+          card_index: currentIndex,
+          user_id: currentUserId,
+          answer: trimmedAnswer,
+        },
+        { onConflict: "room_id,card_index,user_id" },
+      )
+      .select()
+      .single();
+
+    setAnswerSaving(false);
+
+    if (result.error) {
+      setToast({ message: readableErrorMessage(result.error, "回答を保存できませんでした。"), tone: "error" });
+      return;
+    }
+
+    const savedAnswer = result.data as AnswerRow;
+    setAnswers((currentAnswers) => {
+      const nextAnswers = currentAnswers.filter(
+        (answer) =>
+          !(
+            answer.room_id === savedAnswer.room_id &&
+            answer.card_index === savedAnswer.card_index &&
+            answer.user_id === savedAnswer.user_id
+          ),
+      );
+      return [...nextAnswers, savedAnswer].sort((a, b) => a.created_at.localeCompare(b.created_at));
+    });
+    setToast({ message: "回答を保存しました。", tone: "success" });
   }
 
   if (error) {
@@ -603,9 +769,22 @@ function RoomScreen({ roomCode }: { roomCode: string }) {
         onCategoryChange={changeCategory}
         onLevelChange={changeLevel}
         matchingCount={matchingIndexes.length}
+        canChangeCategory={isRoomCreator}
       />
 
       <QuestionCardView card={currentCard} progressText={progressText} />
+
+      <AnswerPanel
+        answerText={answerText}
+        answerSaving={answerSaving}
+        canRevealAnswers={canRevealAnswers}
+        currentUserId={currentUserId}
+        ownAnswer={ownAnswer}
+        answers={currentCardAnswers}
+        status={answerStatus}
+        onAnswerTextChange={setAnswerText}
+        onSubmit={submitAnswer}
+      />
 
       <div className="controls">
         <button onClick={() => moveInFilter(-1)} disabled={saving || matchingIndexes.length === 0 || filteredPosition === 0}>
@@ -638,21 +817,24 @@ function CardFilters({
   onCategoryChange,
   onLevelChange,
   matchingCount,
+  canChangeCategory,
 }: {
   selectedCategory: CategoryFilter;
   selectedLevel: LevelFilter;
   onCategoryChange: (category: CategoryFilter) => void;
   onLevelChange: (level: LevelFilter) => void;
   matchingCount: number;
+  canChangeCategory: boolean;
 }) {
   return (
     <section className="filter-panel" aria-label="カード条件">
       <div className="filter-row">
-        <div className="filter-title">カテゴリ</div>
+        <div className="filter-title">カテゴリ {canChangeCategory ? "" : "（作成者のみ変更）"}</div>
         <div className="chip-list">
           <button
             className={selectedCategory === "all" ? "chip selected" : "chip"}
             onClick={() => onCategoryChange("all")}
+            disabled={!canChangeCategory}
           >
             すべて
           </button>
@@ -661,6 +843,7 @@ function CardFilters({
               key={category}
               className={selectedCategory === category ? "chip selected" : "chip"}
               onClick={() => onCategoryChange(category)}
+              disabled={!canChangeCategory}
             >
               {label}
             </button>
@@ -690,6 +873,67 @@ function CardFilters({
       </div>
 
       <div className="filter-count">{matchingCount}問</div>
+    </section>
+  );
+}
+
+function AnswerPanel({
+  answerText,
+  answerSaving,
+  canRevealAnswers,
+  currentUserId,
+  ownAnswer,
+  answers,
+  status,
+  onAnswerTextChange,
+  onSubmit,
+}: {
+  answerText: string;
+  answerSaving: boolean;
+  canRevealAnswers: boolean;
+  currentUserId: string | null;
+  ownAnswer: AnswerRow | undefined;
+  answers: AnswerRow[];
+  status: string | null;
+  onAnswerTextChange: (value: string) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  return (
+    <section className="answer-panel" aria-label="回答">
+      <div className="answer-heading">
+        <h2>回答</h2>
+        <span>{answers.length} / 2</span>
+      </div>
+
+      {status ? <div className="notice error">{status}</div> : null}
+
+      <form className="answer-form" onSubmit={onSubmit}>
+        <textarea
+          value={answerText}
+          onChange={(event: { target: { value: string } }) => onAnswerTextChange(event.target.value)}
+          placeholder="自分の回答を書く"
+          rows={4}
+          maxLength={2000}
+        />
+        <button type="submit" disabled={answerSaving}>
+          {answerSaving ? "保存中..." : ownAnswer ? "更新する" : "回答する"}
+        </button>
+      </form>
+
+      {!canRevealAnswers ? (
+        <p className="answer-wait">
+          {ownAnswer ? "回答済みです。相手の回答を待っています。" : "2人とも回答すると、お互いの回答が表示されます。"}
+        </p>
+      ) : (
+        <div className="answer-list">
+          {answers.map((answer) => (
+            <article className="answer-card" key={`${answer.card_index}-${answer.user_id}`}>
+              <div>{answer.user_id === currentUserId ? "あなた" : "相手"}</div>
+              <p>{answer.answer}</p>
+            </article>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

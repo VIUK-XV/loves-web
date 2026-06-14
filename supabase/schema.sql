@@ -5,16 +5,30 @@ create table if not exists public.rooms (
   room_code text not null unique,
   seed text not null,
   current_index integer not null default 0 check (current_index >= 0),
+  selected_category text not null default 'all',
   created_by uuid not null references auth.users(id) on delete cascade,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.rooms
+add column if not exists selected_category text not null default 'all';
 
 create table if not exists public.room_members (
   room_id uuid not null references public.rooms(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
   joined_at timestamptz not null default now(),
   primary key (room_id, user_id)
+);
+
+create table if not exists public.room_answers (
+  room_id uuid not null references public.rooms(id) on delete cascade,
+  card_index integer not null check (card_index >= 0),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  answer text not null check (char_length(answer) <= 2000),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (room_id, card_index, user_id)
 );
 
 create or replace function public.set_updated_at()
@@ -32,8 +46,14 @@ create trigger rooms_set_updated_at
 before update on public.rooms
 for each row execute function public.set_updated_at();
 
+drop trigger if exists room_answers_set_updated_at on public.room_answers;
+create trigger room_answers_set_updated_at
+before update on public.room_answers
+for each row execute function public.set_updated_at();
+
 alter table public.rooms enable row level security;
 alter table public.room_members enable row level security;
+alter table public.room_answers enable row level security;
 
 drop policy if exists "room members can read rooms" on public.rooms;
 create policy "room members can read rooms"
@@ -77,6 +97,74 @@ on public.room_members
 for select
 to authenticated
 using (user_id = auth.uid());
+
+drop policy if exists "room members can read answers" on public.room_answers;
+create policy "room members can read answers"
+on public.room_answers
+for select
+to authenticated
+using (
+  exists (
+    select 1
+    from public.room_members
+    where room_members.room_id = room_answers.room_id
+      and room_members.user_id = auth.uid()
+  )
+);
+
+drop policy if exists "room members can insert own answers" on public.room_answers;
+create policy "room members can insert own answers"
+on public.room_answers
+for insert
+to authenticated
+with check (
+  user_id = auth.uid()
+  and exists (
+    select 1
+    from public.room_members
+    where room_members.room_id = room_answers.room_id
+      and room_members.user_id = auth.uid()
+  )
+);
+
+drop policy if exists "room members can update own answers" on public.room_answers;
+create policy "room members can update own answers"
+on public.room_answers
+for update
+to authenticated
+using (
+  user_id = auth.uid()
+  and exists (
+    select 1
+    from public.room_members
+    where room_members.room_id = room_answers.room_id
+      and room_members.user_id = auth.uid()
+  )
+)
+with check (
+  user_id = auth.uid()
+  and exists (
+    select 1
+    from public.room_members
+    where room_members.room_id = room_answers.room_id
+      and room_members.user_id = auth.uid()
+  )
+);
+
+drop policy if exists "room members can delete own answers" on public.room_answers;
+create policy "room members can delete own answers"
+on public.room_answers
+for delete
+to authenticated
+using (
+  user_id = auth.uid()
+  and exists (
+    select 1
+    from public.room_members
+    where room_members.room_id = room_answers.room_id
+      and room_members.user_id = auth.uid()
+  )
+);
 
 create or replace function public.create_room(p_room_code text, p_seed text)
 returns public.rooms
@@ -136,14 +224,24 @@ $$;
 grant usage on schema public to anon, authenticated;
 grant select, update on public.rooms to authenticated;
 grant select on public.room_members to authenticated;
+grant select, insert, update, delete on public.room_answers to authenticated;
 grant execute on function public.create_room(text, text) to authenticated;
 grant execute on function public.join_room(text) to authenticated;
 
 alter table public.rooms replica identity full;
+alter table public.room_answers replica identity full;
 
 do $$
 begin
   alter publication supabase_realtime add table public.rooms;
+exception
+  when duplicate_object then null;
+end;
+$$;
+
+do $$
+begin
+  alter publication supabase_realtime add table public.room_answers;
 exception
   when duplicate_object then null;
 end;
