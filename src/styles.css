@@ -356,6 +356,7 @@ h2 {
   font-size: 1.05rem;
   font-weight: 900;
   line-height: 1.65;
+  white-space: pre-wrap;
 }
 
 .agenda-preview-controls {
@@ -453,6 +454,7 @@ h2 {
   font-weight: 900;
   line-height: 1.5;
   text-align: left;
+  white-space: pre-wrap;
   scrollbar-width: none;
 }
 
