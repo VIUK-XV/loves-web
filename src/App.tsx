@@ -307,7 +307,6 @@ function HomeScreen() {
     <section className="home-screen">
       <div className="brand-mark">♡</div>
       <h1>質問カード</h1>
-      <p className="lead">2人で同じカードを見ながら、ゆっくり話せるWeb版です。</p>
 
       {!isSupabaseConfigured ? (
         <div className="notice error">
@@ -344,15 +343,6 @@ function HomeScreen() {
         </button>
       </div>
 
-      <div className="how-to">
-        <h2>使い方</h2>
-        <ol>
-          <li>どちらかが部屋を作ります。</li>
-          <li>共有URLを相手に送ります。</li>
-          <li>同じ部屋に入ると、カードの進み方が同期されます。</li>
-        </ol>
-        <p>回答は保存しません。共有されるのは、今どのカードを見ているかだけです。</p>
-      </div>
     </section>
   );
 }
@@ -1011,8 +1001,18 @@ function QuestionCardView({
   progressText: string;
   showDetails: boolean;
 }) {
+  const textLength = card.text.length + (card.followUps?.join("").length ?? 0);
+  const densityClass =
+    textLength > 520
+      ? "density-max"
+      : textLength > 320
+        ? "density-high"
+        : textLength > 180
+          ? "density-mid"
+          : "";
+
   return (
-    <article className="question-card">
+    <article className={`question-card ${densityClass}`}>
       <div className="card-meta">
         {showDetails ? (
           <>

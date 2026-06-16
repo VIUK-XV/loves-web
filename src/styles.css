@@ -88,14 +88,7 @@ h2 {
   font-size: 1.05rem;
 }
 
-.lead {
-  color: rgba(255, 246, 250, 0.72);
-  line-height: 1.8;
-  text-align: center;
-}
-
 .action-stack,
-.how-to,
 .question-card,
 .answer-panel {
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -278,19 +271,6 @@ h2 {
   color: #26111d;
 }
 
-.how-to {
-  padding: 18px;
-  color: rgba(255, 246, 250, 0.78);
-  line-height: 1.75;
-}
-
-.how-to ol {
-  display: grid;
-  gap: 8px;
-  margin: 12px 0;
-  padding-left: 1.4rem;
-}
-
 .notice {
   border-radius: 14px;
   padding: 12px 14px;
@@ -426,11 +406,25 @@ h2 {
 .question-card {
   display: flex;
   flex: 1;
-  min-height: 320px;
+  min-height: 260px;
+  max-height: min(54svh, 520px);
   flex-direction: column;
-  justify-content: center;
-  gap: 26px;
-  padding: 24px;
+  justify-content: flex-start;
+  gap: 18px;
+  overflow: hidden;
+  padding: 22px;
+}
+
+.question-card.density-mid {
+  gap: 14px;
+  padding: 18px;
+}
+
+.question-card.density-high,
+.question-card.density-max {
+  max-height: min(58svh, 560px);
+  gap: 12px;
+  padding: 16px;
 }
 
 .card-meta {
@@ -449,11 +443,36 @@ h2 {
 }
 
 .question-text {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
   color: #fff6fa;
-  font-size: clamp(1.55rem, 8vw, 2.3rem);
+  font-size: clamp(1.42rem, 6.5vw, 2.08rem);
   font-weight: 900;
-  line-height: 1.55;
+  line-height: 1.5;
   text-align: left;
+  scrollbar-width: none;
+}
+
+.question-text::-webkit-scrollbar {
+  display: none;
+}
+
+.density-mid .question-text {
+  font-size: clamp(1.16rem, 5.25vw, 1.72rem);
+  line-height: 1.45;
+}
+
+.density-high .question-text {
+  font-size: clamp(0.98rem, 4.35vw, 1.42rem);
+  line-height: 1.4;
+}
+
+.density-max .question-text {
+  font-size: clamp(0.84rem, 3.65vw, 1.18rem);
+  line-height: 1.35;
 }
 
 .follow-ups {
