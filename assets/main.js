@@ -45309,7 +45309,700 @@ function mulberry32(seed) {
 	};
 }
 //#endregion
+//#region node_modules/react/cjs/react-jsx-runtime.development.js
+/**
+* @license React
+* react-jsx-runtime.development.js
+*
+* Copyright (c) Facebook, Inc. and its affiliates.
+*
+* This source code is licensed under the MIT license found in the
+* LICENSE file in the root directory of this source tree.
+*/
+var require_react_jsx_runtime_development = /* @__PURE__ */ __commonJSMin(((exports) => {
+	(function() {
+		"use strict";
+		var React = require_react();
+		var REACT_ELEMENT_TYPE = Symbol.for("react.element");
+		var REACT_PORTAL_TYPE = Symbol.for("react.portal");
+		var REACT_FRAGMENT_TYPE = Symbol.for("react.fragment");
+		var REACT_STRICT_MODE_TYPE = Symbol.for("react.strict_mode");
+		var REACT_PROFILER_TYPE = Symbol.for("react.profiler");
+		var REACT_PROVIDER_TYPE = Symbol.for("react.provider");
+		var REACT_CONTEXT_TYPE = Symbol.for("react.context");
+		var REACT_FORWARD_REF_TYPE = Symbol.for("react.forward_ref");
+		var REACT_SUSPENSE_TYPE = Symbol.for("react.suspense");
+		var REACT_SUSPENSE_LIST_TYPE = Symbol.for("react.suspense_list");
+		var REACT_MEMO_TYPE = Symbol.for("react.memo");
+		var REACT_LAZY_TYPE = Symbol.for("react.lazy");
+		var REACT_OFFSCREEN_TYPE = Symbol.for("react.offscreen");
+		var MAYBE_ITERATOR_SYMBOL = Symbol.iterator;
+		var FAUX_ITERATOR_SYMBOL = "@@iterator";
+		function getIteratorFn(maybeIterable) {
+			if (maybeIterable === null || typeof maybeIterable !== "object") return null;
+			var maybeIterator = MAYBE_ITERATOR_SYMBOL && maybeIterable[MAYBE_ITERATOR_SYMBOL] || maybeIterable[FAUX_ITERATOR_SYMBOL];
+			if (typeof maybeIterator === "function") return maybeIterator;
+			return null;
+		}
+		var ReactSharedInternals = React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+		function error(format) {
+			for (var _len2 = arguments.length, args = new Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) args[_key2 - 1] = arguments[_key2];
+			printWarning("error", format, args);
+		}
+		function printWarning(level, format, args) {
+			var stack = ReactSharedInternals.ReactDebugCurrentFrame.getStackAddendum();
+			if (stack !== "") {
+				format += "%s";
+				args = args.concat([stack]);
+			}
+			var argsWithFormat = args.map(function(item) {
+				return String(item);
+			});
+			argsWithFormat.unshift("Warning: " + format);
+			Function.prototype.apply.call(console[level], console, argsWithFormat);
+		}
+		var enableScopeAPI = false;
+		var enableCacheElement = false;
+		var enableTransitionTracing = false;
+		var enableLegacyHidden = false;
+		var enableDebugTracing = false;
+		var REACT_MODULE_REFERENCE = Symbol.for("react.module.reference");
+		function isValidElementType(type) {
+			if (typeof type === "string" || typeof type === "function") return true;
+			if (type === REACT_FRAGMENT_TYPE || type === REACT_PROFILER_TYPE || enableDebugTracing || type === REACT_STRICT_MODE_TYPE || type === REACT_SUSPENSE_TYPE || type === REACT_SUSPENSE_LIST_TYPE || enableLegacyHidden || type === REACT_OFFSCREEN_TYPE || enableScopeAPI || enableCacheElement || enableTransitionTracing) return true;
+			if (typeof type === "object" && type !== null) {
+				if (type.$$typeof === REACT_LAZY_TYPE || type.$$typeof === REACT_MEMO_TYPE || type.$$typeof === REACT_PROVIDER_TYPE || type.$$typeof === REACT_CONTEXT_TYPE || type.$$typeof === REACT_FORWARD_REF_TYPE || type.$$typeof === REACT_MODULE_REFERENCE || type.getModuleId !== void 0) return true;
+			}
+			return false;
+		}
+		function getWrappedName(outerType, innerType, wrapperName) {
+			var displayName = outerType.displayName;
+			if (displayName) return displayName;
+			var functionName = innerType.displayName || innerType.name || "";
+			return functionName !== "" ? wrapperName + "(" + functionName + ")" : wrapperName;
+		}
+		function getContextName(type) {
+			return type.displayName || "Context";
+		}
+		function getComponentNameFromType(type) {
+			if (type == null) return null;
+			if (typeof type.tag === "number") error("Received an unexpected object in getComponentNameFromType(). This is likely a bug in React. Please file an issue.");
+			if (typeof type === "function") return type.displayName || type.name || null;
+			if (typeof type === "string") return type;
+			switch (type) {
+				case REACT_FRAGMENT_TYPE: return "Fragment";
+				case REACT_PORTAL_TYPE: return "Portal";
+				case REACT_PROFILER_TYPE: return "Profiler";
+				case REACT_STRICT_MODE_TYPE: return "StrictMode";
+				case REACT_SUSPENSE_TYPE: return "Suspense";
+				case REACT_SUSPENSE_LIST_TYPE: return "SuspenseList";
+			}
+			if (typeof type === "object") switch (type.$$typeof) {
+				case REACT_CONTEXT_TYPE: return getContextName(type) + ".Consumer";
+				case REACT_PROVIDER_TYPE: return getContextName(type._context) + ".Provider";
+				case REACT_FORWARD_REF_TYPE: return getWrappedName(type, type.render, "ForwardRef");
+				case REACT_MEMO_TYPE:
+					var outerName = type.displayName || null;
+					if (outerName !== null) return outerName;
+					return getComponentNameFromType(type.type) || "Memo";
+				case REACT_LAZY_TYPE:
+					var lazyComponent = type;
+					var payload = lazyComponent._payload;
+					var init = lazyComponent._init;
+					try {
+						return getComponentNameFromType(init(payload));
+					} catch (x) {
+						return null;
+					}
+			}
+			return null;
+		}
+		var assign = Object.assign;
+		var disabledDepth = 0;
+		var prevLog;
+		var prevInfo;
+		var prevWarn;
+		var prevError;
+		var prevGroup;
+		var prevGroupCollapsed;
+		var prevGroupEnd;
+		function disabledLog() {}
+		disabledLog.__reactDisabledLog = true;
+		function disableLogs() {
+			if (disabledDepth === 0) {
+				prevLog = console.log;
+				prevInfo = console.info;
+				prevWarn = console.warn;
+				prevError = console.error;
+				prevGroup = console.group;
+				prevGroupCollapsed = console.groupCollapsed;
+				prevGroupEnd = console.groupEnd;
+				var props = {
+					configurable: true,
+					enumerable: true,
+					value: disabledLog,
+					writable: true
+				};
+				Object.defineProperties(console, {
+					info: props,
+					log: props,
+					warn: props,
+					error: props,
+					group: props,
+					groupCollapsed: props,
+					groupEnd: props
+				});
+			}
+			disabledDepth++;
+		}
+		function reenableLogs() {
+			disabledDepth--;
+			if (disabledDepth === 0) {
+				var props = {
+					configurable: true,
+					enumerable: true,
+					writable: true
+				};
+				Object.defineProperties(console, {
+					log: assign({}, props, { value: prevLog }),
+					info: assign({}, props, { value: prevInfo }),
+					warn: assign({}, props, { value: prevWarn }),
+					error: assign({}, props, { value: prevError }),
+					group: assign({}, props, { value: prevGroup }),
+					groupCollapsed: assign({}, props, { value: prevGroupCollapsed }),
+					groupEnd: assign({}, props, { value: prevGroupEnd })
+				});
+			}
+			if (disabledDepth < 0) error("disabledDepth fell below zero. This is a bug in React. Please file an issue.");
+		}
+		var ReactCurrentDispatcher = ReactSharedInternals.ReactCurrentDispatcher;
+		var prefix;
+		function describeBuiltInComponentFrame(name, source, ownerFn) {
+			if (prefix === void 0) try {
+				throw Error();
+			} catch (x) {
+				var match = x.stack.trim().match(/\n( *(at )?)/);
+				prefix = match && match[1] || "";
+			}
+			return "\n" + prefix + name;
+		}
+		var reentry = false;
+		var componentFrameCache = new (typeof WeakMap === "function" ? WeakMap : Map)();
+		function describeNativeComponentFrame(fn, construct) {
+			if (!fn || reentry) return "";
+			var frame = componentFrameCache.get(fn);
+			if (frame !== void 0) return frame;
+			var control;
+			reentry = true;
+			var previousPrepareStackTrace = Error.prepareStackTrace;
+			Error.prepareStackTrace = void 0;
+			var previousDispatcher = ReactCurrentDispatcher.current;
+			ReactCurrentDispatcher.current = null;
+			disableLogs();
+			try {
+				if (construct) {
+					var Fake = function() {
+						throw Error();
+					};
+					Object.defineProperty(Fake.prototype, "props", { set: function() {
+						throw Error();
+					} });
+					if (typeof Reflect === "object" && Reflect.construct) {
+						try {
+							Reflect.construct(Fake, []);
+						} catch (x) {
+							control = x;
+						}
+						Reflect.construct(fn, [], Fake);
+					} else {
+						try {
+							Fake.call();
+						} catch (x) {
+							control = x;
+						}
+						fn.call(Fake.prototype);
+					}
+				} else {
+					try {
+						throw Error();
+					} catch (x) {
+						control = x;
+					}
+					fn();
+				}
+			} catch (sample) {
+				if (sample && control && typeof sample.stack === "string") {
+					var sampleLines = sample.stack.split("\n");
+					var controlLines = control.stack.split("\n");
+					var s = sampleLines.length - 1;
+					var c = controlLines.length - 1;
+					while (s >= 1 && c >= 0 && sampleLines[s] !== controlLines[c]) c--;
+					for (; s >= 1 && c >= 0; s--, c--) if (sampleLines[s] !== controlLines[c]) {
+						if (s !== 1 || c !== 1) do {
+							s--;
+							c--;
+							if (c < 0 || sampleLines[s] !== controlLines[c]) {
+								var _frame = "\n" + sampleLines[s].replace(" at new ", " at ");
+								if (fn.displayName && _frame.includes("<anonymous>")) _frame = _frame.replace("<anonymous>", fn.displayName);
+								if (typeof fn === "function") componentFrameCache.set(fn, _frame);
+								return _frame;
+							}
+						} while (s >= 1 && c >= 0);
+						break;
+					}
+				}
+			} finally {
+				reentry = false;
+				ReactCurrentDispatcher.current = previousDispatcher;
+				reenableLogs();
+				Error.prepareStackTrace = previousPrepareStackTrace;
+			}
+			var name = fn ? fn.displayName || fn.name : "";
+			var syntheticFrame = name ? describeBuiltInComponentFrame(name) : "";
+			if (typeof fn === "function") componentFrameCache.set(fn, syntheticFrame);
+			return syntheticFrame;
+		}
+		function describeFunctionComponentFrame(fn, source, ownerFn) {
+			return describeNativeComponentFrame(fn, false);
+		}
+		function shouldConstruct(Component) {
+			var prototype = Component.prototype;
+			return !!(prototype && prototype.isReactComponent);
+		}
+		function describeUnknownElementTypeFrameInDEV(type, source, ownerFn) {
+			if (type == null) return "";
+			if (typeof type === "function") return describeNativeComponentFrame(type, shouldConstruct(type));
+			if (typeof type === "string") return describeBuiltInComponentFrame(type);
+			switch (type) {
+				case REACT_SUSPENSE_TYPE: return describeBuiltInComponentFrame("Suspense");
+				case REACT_SUSPENSE_LIST_TYPE: return describeBuiltInComponentFrame("SuspenseList");
+			}
+			if (typeof type === "object") switch (type.$$typeof) {
+				case REACT_FORWARD_REF_TYPE: return describeFunctionComponentFrame(type.render);
+				case REACT_MEMO_TYPE: return describeUnknownElementTypeFrameInDEV(type.type, source, ownerFn);
+				case REACT_LAZY_TYPE:
+					var lazyComponent = type;
+					var payload = lazyComponent._payload;
+					var init = lazyComponent._init;
+					try {
+						return describeUnknownElementTypeFrameInDEV(init(payload), source, ownerFn);
+					} catch (x) {}
+			}
+			return "";
+		}
+		var hasOwnProperty = Object.prototype.hasOwnProperty;
+		var loggedTypeFailures = {};
+		var ReactDebugCurrentFrame = ReactSharedInternals.ReactDebugCurrentFrame;
+		function setCurrentlyValidatingElement(element) {
+			if (element) {
+				var owner = element._owner;
+				var stack = describeUnknownElementTypeFrameInDEV(element.type, element._source, owner ? owner.type : null);
+				ReactDebugCurrentFrame.setExtraStackFrame(stack);
+			} else ReactDebugCurrentFrame.setExtraStackFrame(null);
+		}
+		function checkPropTypes(typeSpecs, values, location, componentName, element) {
+			var has = Function.call.bind(hasOwnProperty);
+			for (var typeSpecName in typeSpecs) if (has(typeSpecs, typeSpecName)) {
+				var error$1 = void 0;
+				try {
+					if (typeof typeSpecs[typeSpecName] !== "function") {
+						var err = Error((componentName || "React class") + ": " + location + " type `" + typeSpecName + "` is invalid; it must be a function, usually from the `prop-types` package, but received `" + typeof typeSpecs[typeSpecName] + "`.This often happens because of typos such as `PropTypes.function` instead of `PropTypes.func`.");
+						err.name = "Invariant Violation";
+						throw err;
+					}
+					error$1 = typeSpecs[typeSpecName](values, typeSpecName, componentName, location, null, "SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED");
+				} catch (ex) {
+					error$1 = ex;
+				}
+				if (error$1 && !(error$1 instanceof Error)) {
+					setCurrentlyValidatingElement(element);
+					error("%s: type specification of %s `%s` is invalid; the type checker function must return `null` or an `Error` but returned a %s. You may have forgotten to pass an argument to the type checker creator (arrayOf, instanceOf, objectOf, oneOf, oneOfType, and shape all require an argument).", componentName || "React class", location, typeSpecName, typeof error$1);
+					setCurrentlyValidatingElement(null);
+				}
+				if (error$1 instanceof Error && !(error$1.message in loggedTypeFailures)) {
+					loggedTypeFailures[error$1.message] = true;
+					setCurrentlyValidatingElement(element);
+					error("Failed %s type: %s", location, error$1.message);
+					setCurrentlyValidatingElement(null);
+				}
+			}
+		}
+		var isArrayImpl = Array.isArray;
+		function isArray(a) {
+			return isArrayImpl(a);
+		}
+		function typeName(value) {
+			return typeof Symbol === "function" && Symbol.toStringTag && value[Symbol.toStringTag] || value.constructor.name || "Object";
+		}
+		function willCoercionThrow(value) {
+			try {
+				testStringCoercion(value);
+				return false;
+			} catch (e) {
+				return true;
+			}
+		}
+		function testStringCoercion(value) {
+			return "" + value;
+		}
+		function checkKeyStringCoercion(value) {
+			if (willCoercionThrow(value)) {
+				error("The provided key is an unsupported type %s. This value must be coerced to a string before before using it here.", typeName(value));
+				return testStringCoercion(value);
+			}
+		}
+		var ReactCurrentOwner = ReactSharedInternals.ReactCurrentOwner;
+		var RESERVED_PROPS = {
+			key: true,
+			ref: true,
+			__self: true,
+			__source: true
+		};
+		var specialPropKeyWarningShown;
+		var specialPropRefWarningShown;
+		var didWarnAboutStringRefs = {};
+		function hasValidRef(config) {
+			if (hasOwnProperty.call(config, "ref")) {
+				var getter = Object.getOwnPropertyDescriptor(config, "ref").get;
+				if (getter && getter.isReactWarning) return false;
+			}
+			return config.ref !== void 0;
+		}
+		function hasValidKey(config) {
+			if (hasOwnProperty.call(config, "key")) {
+				var getter = Object.getOwnPropertyDescriptor(config, "key").get;
+				if (getter && getter.isReactWarning) return false;
+			}
+			return config.key !== void 0;
+		}
+		function warnIfStringRefCannotBeAutoConverted(config, self) {
+			if (typeof config.ref === "string" && ReactCurrentOwner.current && self && ReactCurrentOwner.current.stateNode !== self) {
+				var componentName = getComponentNameFromType(ReactCurrentOwner.current.type);
+				if (!didWarnAboutStringRefs[componentName]) {
+					error("Component \"%s\" contains the string ref \"%s\". Support for string refs will be removed in a future major release. This case cannot be automatically converted to an arrow function. We ask you to manually fix this case by using useRef() or createRef() instead. Learn more about using refs safely here: https://reactjs.org/link/strict-mode-string-ref", getComponentNameFromType(ReactCurrentOwner.current.type), config.ref);
+					didWarnAboutStringRefs[componentName] = true;
+				}
+			}
+		}
+		function defineKeyPropWarningGetter(props, displayName) {
+			var warnAboutAccessingKey = function() {
+				if (!specialPropKeyWarningShown) {
+					specialPropKeyWarningShown = true;
+					error("%s: `key` is not a prop. Trying to access it will result in `undefined` being returned. If you need to access the same value within the child component, you should pass it as a different prop. (https://reactjs.org/link/special-props)", displayName);
+				}
+			};
+			warnAboutAccessingKey.isReactWarning = true;
+			Object.defineProperty(props, "key", {
+				get: warnAboutAccessingKey,
+				configurable: true
+			});
+		}
+		function defineRefPropWarningGetter(props, displayName) {
+			var warnAboutAccessingRef = function() {
+				if (!specialPropRefWarningShown) {
+					specialPropRefWarningShown = true;
+					error("%s: `ref` is not a prop. Trying to access it will result in `undefined` being returned. If you need to access the same value within the child component, you should pass it as a different prop. (https://reactjs.org/link/special-props)", displayName);
+				}
+			};
+			warnAboutAccessingRef.isReactWarning = true;
+			Object.defineProperty(props, "ref", {
+				get: warnAboutAccessingRef,
+				configurable: true
+			});
+		}
+		/**
+		* Factory method to create a new React element. This no longer adheres to
+		* the class pattern, so do not use new to call it. Also, instanceof check
+		* will not work. Instead test $$typeof field against Symbol.for('react.element') to check
+		* if something is a React Element.
+		*
+		* @param {*} type
+		* @param {*} props
+		* @param {*} key
+		* @param {string|object} ref
+		* @param {*} owner
+		* @param {*} self A *temporary* helper to detect places where `this` is
+		* different from the `owner` when React.createElement is called, so that we
+		* can warn. We want to get rid of owner and replace string `ref`s with arrow
+		* functions, and as long as `this` and owner are the same, there will be no
+		* change in behavior.
+		* @param {*} source An annotation object (added by a transpiler or otherwise)
+		* indicating filename, line number, and/or other information.
+		* @internal
+		*/
+		var ReactElement = function(type, key, ref, self, source, owner, props) {
+			var element = {
+				$$typeof: REACT_ELEMENT_TYPE,
+				type,
+				key,
+				ref,
+				props,
+				_owner: owner
+			};
+			element._store = {};
+			Object.defineProperty(element._store, "validated", {
+				configurable: false,
+				enumerable: false,
+				writable: true,
+				value: false
+			});
+			Object.defineProperty(element, "_self", {
+				configurable: false,
+				enumerable: false,
+				writable: false,
+				value: self
+			});
+			Object.defineProperty(element, "_source", {
+				configurable: false,
+				enumerable: false,
+				writable: false,
+				value: source
+			});
+			if (Object.freeze) {
+				Object.freeze(element.props);
+				Object.freeze(element);
+			}
+			return element;
+		};
+		/**
+		* https://github.com/reactjs/rfcs/pull/107
+		* @param {*} type
+		* @param {object} props
+		* @param {string} key
+		*/
+		function jsxDEV(type, config, maybeKey, source, self) {
+			var propName;
+			var props = {};
+			var key = null;
+			var ref = null;
+			if (maybeKey !== void 0) {
+				checkKeyStringCoercion(maybeKey);
+				key = "" + maybeKey;
+			}
+			if (hasValidKey(config)) {
+				checkKeyStringCoercion(config.key);
+				key = "" + config.key;
+			}
+			if (hasValidRef(config)) {
+				ref = config.ref;
+				warnIfStringRefCannotBeAutoConverted(config, self);
+			}
+			for (propName in config) if (hasOwnProperty.call(config, propName) && !RESERVED_PROPS.hasOwnProperty(propName)) props[propName] = config[propName];
+			if (type && type.defaultProps) {
+				var defaultProps = type.defaultProps;
+				for (propName in defaultProps) if (props[propName] === void 0) props[propName] = defaultProps[propName];
+			}
+			if (key || ref) {
+				var displayName = typeof type === "function" ? type.displayName || type.name || "Unknown" : type;
+				if (key) defineKeyPropWarningGetter(props, displayName);
+				if (ref) defineRefPropWarningGetter(props, displayName);
+			}
+			return ReactElement(type, key, ref, self, source, ReactCurrentOwner.current, props);
+		}
+		var ReactCurrentOwner$1 = ReactSharedInternals.ReactCurrentOwner;
+		var ReactDebugCurrentFrame$1 = ReactSharedInternals.ReactDebugCurrentFrame;
+		function setCurrentlyValidatingElement$1(element) {
+			if (element) {
+				var owner = element._owner;
+				var stack = describeUnknownElementTypeFrameInDEV(element.type, element._source, owner ? owner.type : null);
+				ReactDebugCurrentFrame$1.setExtraStackFrame(stack);
+			} else ReactDebugCurrentFrame$1.setExtraStackFrame(null);
+		}
+		var propTypesMisspellWarningShown = false;
+		/**
+		* Verifies the object is a ReactElement.
+		* See https://reactjs.org/docs/react-api.html#isvalidelement
+		* @param {?object} object
+		* @return {boolean} True if `object` is a ReactElement.
+		* @final
+		*/
+		function isValidElement(object) {
+			return typeof object === "object" && object !== null && object.$$typeof === REACT_ELEMENT_TYPE;
+		}
+		function getDeclarationErrorAddendum() {
+			if (ReactCurrentOwner$1.current) {
+				var name = getComponentNameFromType(ReactCurrentOwner$1.current.type);
+				if (name) return "\n\nCheck the render method of `" + name + "`.";
+			}
+			return "";
+		}
+		function getSourceInfoErrorAddendum(source) {
+			if (source !== void 0) {
+				var fileName = source.fileName.replace(/^.*[\\\/]/, "");
+				var lineNumber = source.lineNumber;
+				return "\n\nCheck your code at " + fileName + ":" + lineNumber + ".";
+			}
+			return "";
+		}
+		/**
+		* Warn if there's no key explicitly set on dynamic arrays of children or
+		* object keys are not valid. This allows us to keep track of children between
+		* updates.
+		*/
+		var ownerHasKeyUseWarning = {};
+		function getCurrentComponentErrorInfo(parentType) {
+			var info = getDeclarationErrorAddendum();
+			if (!info) {
+				var parentName = typeof parentType === "string" ? parentType : parentType.displayName || parentType.name;
+				if (parentName) info = "\n\nCheck the top-level render call using <" + parentName + ">.";
+			}
+			return info;
+		}
+		/**
+		* Warn if the element doesn't have an explicit key assigned to it.
+		* This element is in an array. The array could grow and shrink or be
+		* reordered. All children that haven't already been validated are required to
+		* have a "key" property assigned to it. Error statuses are cached so a warning
+		* will only be shown once.
+		*
+		* @internal
+		* @param {ReactElement} element Element that requires a key.
+		* @param {*} parentType element's parent's type.
+		*/
+		function validateExplicitKey(element, parentType) {
+			if (!element._store || element._store.validated || element.key != null) return;
+			element._store.validated = true;
+			var currentComponentErrorInfo = getCurrentComponentErrorInfo(parentType);
+			if (ownerHasKeyUseWarning[currentComponentErrorInfo]) return;
+			ownerHasKeyUseWarning[currentComponentErrorInfo] = true;
+			var childOwner = "";
+			if (element && element._owner && element._owner !== ReactCurrentOwner$1.current) childOwner = " It was passed a child from " + getComponentNameFromType(element._owner.type) + ".";
+			setCurrentlyValidatingElement$1(element);
+			error("Each child in a list should have a unique \"key\" prop.%s%s See https://reactjs.org/link/warning-keys for more information.", currentComponentErrorInfo, childOwner);
+			setCurrentlyValidatingElement$1(null);
+		}
+		/**
+		* Ensure that every element either is passed in a static location, in an
+		* array with an explicit keys property defined, or in an object literal
+		* with valid key property.
+		*
+		* @internal
+		* @param {ReactNode} node Statically passed child of any type.
+		* @param {*} parentType node's parent's type.
+		*/
+		function validateChildKeys(node, parentType) {
+			if (typeof node !== "object") return;
+			if (isArray(node)) for (var i = 0; i < node.length; i++) {
+				var child = node[i];
+				if (isValidElement(child)) validateExplicitKey(child, parentType);
+			}
+			else if (isValidElement(node)) {
+				if (node._store) node._store.validated = true;
+			} else if (node) {
+				var iteratorFn = getIteratorFn(node);
+				if (typeof iteratorFn === "function") {
+					if (iteratorFn !== node.entries) {
+						var iterator = iteratorFn.call(node);
+						var step;
+						while (!(step = iterator.next()).done) if (isValidElement(step.value)) validateExplicitKey(step.value, parentType);
+					}
+				}
+			}
+		}
+		/**
+		* Given an element, validate that its props follow the propTypes definition,
+		* provided by the type.
+		*
+		* @param {ReactElement} element
+		*/
+		function validatePropTypes(element) {
+			var type = element.type;
+			if (type === null || type === void 0 || typeof type === "string") return;
+			var propTypes;
+			if (typeof type === "function") propTypes = type.propTypes;
+			else if (typeof type === "object" && (type.$$typeof === REACT_FORWARD_REF_TYPE || type.$$typeof === REACT_MEMO_TYPE)) propTypes = type.propTypes;
+			else return;
+			if (propTypes) {
+				var name = getComponentNameFromType(type);
+				checkPropTypes(propTypes, element.props, "prop", name, element);
+			} else if (type.PropTypes !== void 0 && !propTypesMisspellWarningShown) {
+				propTypesMisspellWarningShown = true;
+				error("Component %s declared `PropTypes` instead of `propTypes`. Did you misspell the property assignment?", getComponentNameFromType(type) || "Unknown");
+			}
+			if (typeof type.getDefaultProps === "function" && !type.getDefaultProps.isReactClassApproved) error("getDefaultProps is only used on classic React.createClass definitions. Use a static property named `defaultProps` instead.");
+		}
+		/**
+		* Given a fragment, validate that it can only be provided with fragment props
+		* @param {ReactElement} fragment
+		*/
+		function validateFragmentProps(fragment) {
+			var keys = Object.keys(fragment.props);
+			for (var i = 0; i < keys.length; i++) {
+				var key = keys[i];
+				if (key !== "children" && key !== "key") {
+					setCurrentlyValidatingElement$1(fragment);
+					error("Invalid prop `%s` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.", key);
+					setCurrentlyValidatingElement$1(null);
+					break;
+				}
+			}
+			if (fragment.ref !== null) {
+				setCurrentlyValidatingElement$1(fragment);
+				error("Invalid attribute `ref` supplied to `React.Fragment`.");
+				setCurrentlyValidatingElement$1(null);
+			}
+		}
+		var didWarnAboutKeySpread = {};
+		function jsxWithValidation(type, props, key, isStaticChildren, source, self) {
+			var validType = isValidElementType(type);
+			if (!validType) {
+				var info = "";
+				if (type === void 0 || typeof type === "object" && type !== null && Object.keys(type).length === 0) info += " You likely forgot to export your component from the file it's defined in, or you might have mixed up default and named imports.";
+				var sourceInfo = getSourceInfoErrorAddendum(source);
+				if (sourceInfo) info += sourceInfo;
+				else info += getDeclarationErrorAddendum();
+				var typeString;
+				if (type === null) typeString = "null";
+				else if (isArray(type)) typeString = "array";
+				else if (type !== void 0 && type.$$typeof === REACT_ELEMENT_TYPE) {
+					typeString = "<" + (getComponentNameFromType(type.type) || "Unknown") + " />";
+					info = " Did you accidentally export a JSX literal instead of a component?";
+				} else typeString = typeof type;
+				error("React.jsx: type is invalid -- expected a string (for built-in components) or a class/function (for composite components) but got: %s.%s", typeString, info);
+			}
+			var element = jsxDEV(type, props, key, source, self);
+			if (element == null) return element;
+			if (validType) {
+				var children = props.children;
+				if (children !== void 0) if (isStaticChildren) if (isArray(children)) {
+					for (var i = 0; i < children.length; i++) validateChildKeys(children[i], type);
+					if (Object.freeze) Object.freeze(children);
+				} else error("React.jsx: Static children should always be an array. You are likely explicitly calling React.jsxs or React.jsxDEV. Use the Babel transform instead.");
+				else validateChildKeys(children, type);
+			}
+			if (hasOwnProperty.call(props, "key")) {
+				var componentName = getComponentNameFromType(type);
+				var keys = Object.keys(props).filter(function(k) {
+					return k !== "key";
+				});
+				var beforeExample = keys.length > 0 ? "{key: someKey, " + keys.join(": ..., ") + ": ...}" : "{key: someKey}";
+				if (!didWarnAboutKeySpread[componentName + beforeExample]) {
+					error("A props object containing a \"key\" prop is being spread into JSX:\n  let props = %s;\n  <%s {...props} />\nReact keys must be passed directly to JSX without using spread:\n  let props = %s;\n  <%s key={someKey} {...props} />", beforeExample, componentName, keys.length > 0 ? "{" + keys.join(": ..., ") + ": ...}" : "{}", componentName);
+					didWarnAboutKeySpread[componentName + beforeExample] = true;
+				}
+			}
+			if (type === REACT_FRAGMENT_TYPE) validateFragmentProps(element);
+			else validatePropTypes(element);
+			return element;
+		}
+		function jsxWithValidationStatic(type, props, key) {
+			return jsxWithValidation(type, props, key, true);
+		}
+		function jsxWithValidationDynamic(type, props, key) {
+			return jsxWithValidation(type, props, key, false);
+		}
+		var jsx = jsxWithValidationDynamic;
+		var jsxs = jsxWithValidationStatic;
+		exports.Fragment = REACT_FRAGMENT_TYPE;
+		exports.jsx = jsx;
+		exports.jsxs = jsxs;
+	})();
+}));
+//#endregion
 //#region src/App.tsx
+var import_jsx_runtime = (/* @__PURE__ */ __commonJSMin(((exports, module) => {
+	module.exports = require_react_jsx_runtime_development();
+})))();
 const categoryOptions = Object.entries(categoryLabels);
 const levelOptions = [
 	1,
@@ -45388,9 +46081,10 @@ function App() {
 		window.addEventListener("hashchange", onHashChange);
 		return () => window.removeEventListener("hashchange", onHashChange);
 	}, []);
-	return <main className="app-shell">
-      {route.name === "home" ? <QuestionCardApp /> : <RoomScreen roomCode={route.roomCode} />}
-    </main>;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("main", {
+		className: "app-shell",
+		children: route.name === "home" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(QuestionCardApp, {}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RoomScreen, { roomCode: route.roomCode })
+	});
 }
 function QuestionCardApp() {
 	const [mode, setMode] = (0, import_react.useState)("normal");
@@ -45562,102 +46256,166 @@ function QuestionCardApp() {
 		setSavedAIQuestions(nextSavedQuestions);
 		localStorage.setItem(localStorageKeys.aiSavedQuestions, JSON.stringify(nextSavedQuestions));
 	}
-	return <section className="ios-card-app">
-      <div className="top-actions">
-        <a className="circle-button" href="#/" aria-label="質問一覧">
-          ...
-        </a>
-        <button className="circle-button" type="button" onClick={() => setUsedQuestionIds([])} aria-label="履歴リセット">
-          ⌘
-        </button>
-      </div>
-
-      <header className="local-hero">
-        <div className="brand-mark">♥</div>
-        <h1>質問カード</h1>
-      </header>
-
-      <div className="mode-tabs" role="tablist" aria-label="モード">
-        {[
-		["normal", "通常"],
-		["custom", "独自"],
-		["ai", "AI生成"]
-	].map(([value, label]) => <button className={mode === value ? "active" : ""} key={value} type="button" onClick={() => {
-		setMode(value);
-		setUsedQuestionIds([]);
-	}}>
-            {label}
-          </button>)}
-      </div>
-
-      {mode !== "custom" ? <details className="selection-panel">
-          <summary>
-            <span>
-              <strong>{categoryLabels[selectedCategory]}</strong>
-              <small>カテゴリ</small>
-            </span>
-          </summary>
-          <div className="chip-grid">
-            {categoryOptions.map(([category, label]) => <button className={selectedCategory === category ? "chip active" : "chip"} key={category} type="button" onClick={() => {
-		setSelectedCategory(category);
-		setUsedQuestionIds([]);
-	}}>
-                {label}
-              </button>)}
-          </div>
-        </details> : null}
-
-      {mode !== "custom" ? <details className="selection-panel">
-          <summary>
-            <span>
-              <strong>{selectedLevel}</strong>
-              <small>レベル</small>
-            </span>
-          </summary>
-          <div className="level-grid">
-            {levelOptions.map((level) => <button className={selectedLevel === level ? "level-button active" : "level-button"} key={level} type="button" onClick={() => {
-		setSelectedLevel(level);
-		setUsedQuestionIds([]);
-	}}>
-                {level}
-              </button>)}
-          </div>
-        </details> : null}
-
-      <details className="library-panel">
-        <summary>...</summary>
-        <QuestionLibrary customQuestions={customQuestions} savedAIQuestions={savedAIQuestions} onDeleteCustom={deleteCustomQuestion} onResetCustom={resetCustomQuestions} />
-      </details>
-
-      {mode === "custom" ? <CustomQuestionPanel customInput={customInput} customQuestions={customQuestions} onChangeInput={setCustomInput} onSave={saveCustomQuestions} onDelete={deleteCustomQuestion} onReset={resetCustomQuestions} /> : null}
-
-      {mode === "ai" ? <AIGeneratorPanel relationship={relationship} topic={aiTopic} answer={aiAnswer} interviewQuestion={aiQuestion} interviewTurns={aiTurns} generatedQuestions={generatedQuestions} isGenerating={isGenerating} statusMessage={aiStatus} onChangeRelationship={setRelationship} onChangeTopic={setAITopic} onChangeAnswer={setAIAnswer} onSaveRelationship={saveRelationship} onStart={startAIInterview} onSubmitAnswer={submitAIAnswer} onFinish={() => finishAIQuestion()} onReset={resetAIInterview} onUseQuestion={useGeneratedQuestion} onSaveQuestion={saveGeneratedQuestion} /> : null}
-
-      <LocalQuestionCardView question={currentQuestion} emptyText={mode === "custom" ? "独自の質問をシャッフル" : "カテゴリを選んで質問を表示"} />
-
-      <button className="shuffle-button" type="button" onClick={() => showRandomQuestion()}>
-        ⤨
-      </button>
-
-      <p className="local-footer">© 2026 viuk. All rights reserved.</p>
-    </section>;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+		className: "ios-card-app",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "top-actions",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("a", {
+					className: "circle-button",
+					href: "#/",
+					"aria-label": "質問一覧",
+					children: "..."
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+					className: "circle-button",
+					type: "button",
+					onClick: () => setUsedQuestionIds([]),
+					"aria-label": "履歴リセット",
+					children: "⌘"
+				})]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("header", {
+				className: "local-hero",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+					className: "brand-mark",
+					children: "♥"
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h1", { children: "質問カード" })]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				className: "mode-tabs",
+				role: "tablist",
+				"aria-label": "モード",
+				children: [
+					["normal", "通常"],
+					["custom", "独自"],
+					["ai", "AI生成"]
+				].map(([value, label]) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+					className: mode === value ? "active" : "",
+					type: "button",
+					onClick: () => {
+						setMode(value);
+						setUsedQuestionIds([]);
+					},
+					children: label
+				}, value))
+			}),
+			mode !== "custom" ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("details", {
+				className: "selection-panel",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("summary", { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: categoryLabels[selectedCategory] }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("small", { children: "カテゴリ" })] }) }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+					className: "chip-grid",
+					children: categoryOptions.map(([category, label]) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+						className: selectedCategory === category ? "chip active" : "chip",
+						type: "button",
+						onClick: () => {
+							setSelectedCategory(category);
+							setUsedQuestionIds([]);
+						},
+						children: label
+					}, category))
+				})]
+			}) : null,
+			mode !== "custom" ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("details", {
+				className: "selection-panel",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("summary", { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: selectedLevel }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("small", { children: "レベル" })] }) }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+					className: "level-grid",
+					children: levelOptions.map((level) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+						className: selectedLevel === level ? "level-button active" : "level-button",
+						type: "button",
+						onClick: () => {
+							setSelectedLevel(level);
+							setUsedQuestionIds([]);
+						},
+						children: level
+					}, level))
+				})]
+			}) : null,
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("details", {
+				className: "library-panel",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("summary", { children: "..." }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(QuestionLibrary, {
+					customQuestions,
+					savedAIQuestions,
+					onDeleteCustom: deleteCustomQuestion,
+					onResetCustom: resetCustomQuestions
+				})]
+			}),
+			mode === "custom" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CustomQuestionPanel, {
+				customInput,
+				customQuestions,
+				onChangeInput: setCustomInput,
+				onSave: saveCustomQuestions,
+				onDelete: deleteCustomQuestion,
+				onReset: resetCustomQuestions
+			}) : null,
+			mode === "ai" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AIGeneratorPanel, {
+				relationship,
+				topic: aiTopic,
+				answer: aiAnswer,
+				interviewQuestion: aiQuestion,
+				interviewTurns: aiTurns,
+				generatedQuestions,
+				isGenerating,
+				statusMessage: aiStatus,
+				onChangeRelationship: setRelationship,
+				onChangeTopic: setAITopic,
+				onChangeAnswer: setAIAnswer,
+				onSaveRelationship: saveRelationship,
+				onStart: startAIInterview,
+				onSubmitAnswer: submitAIAnswer,
+				onFinish: () => finishAIQuestion(),
+				onReset: resetAIInterview,
+				onUseQuestion: useGeneratedQuestion,
+				onSaveQuestion: saveGeneratedQuestion
+			}) : null,
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(LocalQuestionCardView, {
+				question: currentQuestion,
+				emptyText: mode === "custom" ? "独自の質問をシャッフル" : "カテゴリを選んで質問を表示"
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+				className: "shuffle-button",
+				type: "button",
+				onClick: () => showRandomQuestion(),
+				children: "⤨"
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "local-footer",
+				children: "© 2026 viuk. All rights reserved."
+			})
+		]
+	});
 }
 function CustomQuestionPanel({ customInput, customQuestions, onChangeInput, onSave, onDelete, onReset }) {
-	return <section className="local-panel">
-      <h2>独自の質問</h2>
-      <textarea value={customInput} onChange={(event) => onChangeInput(event.target.value)} onKeyDown={(event) => {
-		if ((event.metaKey || event.ctrlKey) && event.key === "Enter") onSave();
-	}} placeholder="1行に1問ずつ入力" />
-      <div className="two-buttons">
-        <button className="primary-button" type="button" onClick={onSave}>
-          保存
-        </button>
-        <button className="ghost-button" type="button" onClick={onReset}>
-          リセット
-        </button>
-      </div>
-      <SavedQuestionList questions={customQuestions} onDelete={onDelete} />
-    </section>;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+		className: "local-panel",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", { children: "独自の質問" }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("textarea", {
+				value: customInput,
+				onChange: (event) => onChangeInput(event.target.value),
+				onKeyDown: (event) => {
+					if ((event.metaKey || event.ctrlKey) && event.key === "Enter") onSave();
+				},
+				placeholder: "1行に1問ずつ入力"
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "two-buttons",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+					className: "primary-button",
+					type: "button",
+					onClick: onSave,
+					children: "保存"
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+					className: "ghost-button",
+					type: "button",
+					onClick: onReset,
+					children: "リセット"
+				})]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SavedQuestionList, {
+				questions: customQuestions,
+				onDelete
+			})
+		]
+	});
 }
 function AIGeneratorPanel({ relationship, topic, answer, interviewQuestion, interviewTurns, generatedQuestions, isGenerating, statusMessage, onChangeRelationship, onChangeTopic, onChangeAnswer, onSaveRelationship, onStart, onSubmitAnswer, onFinish, onReset, onUseQuestion, onSaveQuestion }) {
 	const suggestions = interviewTurns.length === 0 ? [
@@ -45677,77 +46435,127 @@ function AIGeneratorPanel({ relationship, topic, answer, interviewQuestion, inte
 		"少しデリケート",
 		"答えやすく"
 	];
-	return <section className="local-panel ai-panel">
-      <h2>AIで質問を作る</h2>
-      <label>
-        <span>関係性</span>
-        <div className="inline-input">
-          <input value={relationship} onChange={(event) => onChangeRelationship(event.target.value)} placeholder="例：付き合いたて、同じ学校" />
-          <button type="button" onClick={onSaveRelationship}>保存</button>
-        </div>
-      </label>
-      <label>
-        <span>追加テーマ 任意</span>
-        <input value={topic} onChange={(event) => onChangeTopic(event.target.value)} placeholder="聞きたい方向があれば入力" />
-      </label>
-
-      {interviewTurns.length ? <div className="turn-list">
-          <strong>ここまで</strong>
-          {interviewTurns.map((turn, index) => <div className="turn-card" key={`${turn.question}-${index}`}>
-              <small>{turn.question}</small>
-              <p>{turn.answer}</p>
-            </div>)}
-        </div> : null}
-
-      {interviewQuestion ? <div className="interview-box">
-          <strong>AIからの質問</strong>
-          <p>{interviewQuestion}</p>
-          <textarea value={answer} onChange={(event) => onChangeAnswer(event.target.value)} placeholder="答えを入力" />
-          <div className="chip-row">
-            {suggestions.map((suggestion) => <button key={suggestion} type="button" onClick={() => onChangeAnswer(suggestion)}>
-                {suggestion}
-              </button>)}
-          </div>
-          <div className="two-buttons">
-            <button className="primary-button" type="button" onClick={onSubmitAnswer} disabled={isGenerating}>
-              {isGenerating ? "確認中" : "答えて次へ"}
-            </button>
-            <button className="ghost-button" type="button" onClick={onFinish} disabled={isGenerating || !interviewTurns.length}>
-              最終生成
-            </button>
-          </div>
-        </div> : <button className="primary-button" type="button" onClick={onStart} disabled={isGenerating}>
-          {isGenerating ? "確認中" : "AIと作る"}
-        </button>}
-
-      {interviewTurns.length || interviewQuestion || generatedQuestions.length ? <button className="ghost-button" type="button" onClick={onReset}>
-          最初から
-        </button> : null}
-
-      {statusMessage ? <p className="status-text">{statusMessage}</p> : null}
-
-      {generatedQuestions.length ? <div className="generated-list">
-          <strong>生成済み</strong>
-          {generatedQuestions.map((question) => <div className="generated-card" key={question}>
-              <p>{question}</p>
-              <div className="two-buttons">
-                <button className="ghost-button" type="button" onClick={() => onUseQuestion(question)}>表示</button>
-                <button className="primary-button" type="button" onClick={() => onSaveQuestion(question)}>追加</button>
-              </div>
-            </div>)}
-        </div> : null}
-    </section>;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+		className: "local-panel ai-panel",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", { children: "AIで質問を作る" }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("label", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "関係性" }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "inline-input",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
+					value: relationship,
+					onChange: (event) => onChangeRelationship(event.target.value),
+					placeholder: "例：付き合いたて、同じ学校"
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+					type: "button",
+					onClick: onSaveRelationship,
+					children: "保存"
+				})]
+			})] }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("label", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "追加テーマ 任意" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
+				value: topic,
+				onChange: (event) => onChangeTopic(event.target.value),
+				placeholder: "聞きたい方向があれば入力"
+			})] }),
+			interviewTurns.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "turn-list",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "ここまで" }), interviewTurns.map((turn, index) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "turn-card",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("small", { children: turn.question }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { children: turn.answer })]
+				}, `${turn.question}-${index}`))]
+			}) : null,
+			interviewQuestion ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "interview-box",
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "AIからの質問" }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { children: interviewQuestion }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("textarea", {
+						value: answer,
+						onChange: (event) => onChangeAnswer(event.target.value),
+						placeholder: "答えを入力"
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+						className: "chip-row",
+						children: suggestions.map((suggestion) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+							type: "button",
+							onClick: () => onChangeAnswer(suggestion),
+							children: suggestion
+						}, suggestion))
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "two-buttons",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+							className: "primary-button",
+							type: "button",
+							onClick: onSubmitAnswer,
+							disabled: isGenerating,
+							children: isGenerating ? "確認中" : "答えて次へ"
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+							className: "ghost-button",
+							type: "button",
+							onClick: onFinish,
+							disabled: isGenerating || !interviewTurns.length,
+							children: "最終生成"
+						})]
+					})
+				]
+			}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+				className: "primary-button",
+				type: "button",
+				onClick: onStart,
+				disabled: isGenerating,
+				children: isGenerating ? "確認中" : "AIと作る"
+			}),
+			interviewTurns.length || interviewQuestion || generatedQuestions.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+				className: "ghost-button",
+				type: "button",
+				onClick: onReset,
+				children: "最初から"
+			}) : null,
+			statusMessage ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "status-text",
+				children: statusMessage
+			}) : null,
+			generatedQuestions.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "generated-list",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "生成済み" }), generatedQuestions.map((question) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "generated-card",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { children: question }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "two-buttons",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+							className: "ghost-button",
+							type: "button",
+							onClick: () => onUseQuestion(question),
+							children: "表示"
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+							className: "primary-button",
+							type: "button",
+							onClick: () => onSaveQuestion(question),
+							children: "追加"
+						})]
+					})]
+				}, question))]
+			}) : null
+		]
+	});
 }
 function LocalQuestionCardView({ question, emptyText }) {
-	const densityClass = !question ? "" : question.text.length > 520 ? "density-max" : question.text.length > 320 ? "density-high" : question.text.length > 180 ? "density-mid" : "";
-	return <article className={`local-question-card ${densityClass}`}>
-      {question?.category && question.level ? <div className="local-card-meta">
-          <span>{categoryLabels[question.category]}</span>
-          <span>{question.level}</span>
-        </div> : null}
-      <p className="local-question-text">{question?.text ?? emptyText}</p>
-      {question?.isAIGenerated ? <small className="ai-card-label">AI生成カード</small> : null}
-    </article>;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("article", {
+		className: `local-question-card ${!question ? "" : question.text.length > 520 ? "density-max" : question.text.length > 320 ? "density-high" : question.text.length > 180 ? "density-mid" : ""}`,
+		children: [
+			question?.category && question.level ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "local-card-meta",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: categoryLabels[question.category] }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: question.level })]
+			}) : null,
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "local-question-text",
+				children: question?.text ?? emptyText
+			}),
+			question?.isAIGenerated ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("small", {
+				className: "ai-card-label",
+				children: "AI生成カード"
+			}) : null
+		]
+	});
 }
 function QuestionLibrary({ customQuestions, savedAIQuestions, onDeleteCustom, onResetCustom }) {
 	const questionsByCategory = (0, import_react.useMemo)(() => categoryOptions.map(([category, label]) => ({
@@ -45758,45 +46566,57 @@ function QuestionLibrary({ customQuestions, savedAIQuestions, onDeleteCustom, on
 			questions: cards.filter((card) => card.category === category && card.level === level)
 		}))
 	})), []);
-	return <div className="question-library">
-      <h2>全質問</h2>
-      <p>{cards.length + customQuestions.length + savedAIQuestions.length}問</p>
-      {customQuestions.length ? <section>
-          <div className="library-heading">
-            <strong>独自質問</strong>
-            <button type="button" onClick={onResetCustom}>リセット</button>
-          </div>
-          <SavedQuestionList questions={customQuestions} onDelete={onDeleteCustom} />
-        </section> : null}
-      {savedAIQuestions.length ? <section>
-          <strong>AI保存済み</strong>
-          <ul>
-            {savedAIQuestions.map((question) => <li key={question.id}>
-                <small>{categoryLabels[question.category]} / {question.level}</small>
-                <span>{question.text}</span>
-              </li>)}
-          </ul>
-        </section> : null}
-      {questionsByCategory.map(({ category, label, levels }) => <details key={category}>
-          <summary>{label}</summary>
-          {levels.map(({ level, questions }) => <details key={`${category}-${level}`} className="level-library">
-              <summary>{level} / {questions.length}問</summary>
-              <ol>
-                {questions.map((card) => <li key={card.id}>{formatCardText(card)}</li>)}
-              </ol>
-            </details>)}
-        </details>)}
-    </div>;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "question-library",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", { children: "全質問" }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { children: [cards.length + customQuestions.length + savedAIQuestions.length, "問"] }),
+			customQuestions.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "library-heading",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "独自質問" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+					type: "button",
+					onClick: onResetCustom,
+					children: "リセット"
+				})]
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SavedQuestionList, {
+				questions: customQuestions,
+				onDelete: onDeleteCustom
+			})] }) : null,
+			savedAIQuestions.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "AI保存済み" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ul", { children: savedAIQuestions.map((question) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("small", { children: [
+				categoryLabels[question.category],
+				" / ",
+				question.level
+			] }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: question.text })] }, question.id)) })] }) : null,
+			questionsByCategory.map(({ category, label, levels }) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("details", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("summary", { children: label }), levels.map(({ level, questions }) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("details", {
+				className: "level-library",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("summary", { children: [
+					level,
+					" / ",
+					questions.length,
+					"問"
+				] }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ol", { children: questions.map((card) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("li", { children: formatCardText(card) }, card.id)) })]
+			}, `${category}-${level}`))] }, category))
+		]
+	});
 }
 function SavedQuestionList({ questions, onDelete }) {
 	if (!questions.length) return null;
-	return <div className="saved-question-list">
-      {questions.map((question, index) => <div className="saved-question-row" key={`${question}-${index}`}>
-          <span>{index + 1}</span>
-          <p>{question}</p>
-          <button type="button" onClick={() => onDelete(index)} aria-label="削除">削除</button>
-        </div>)}
-    </div>;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+		className: "saved-question-list",
+		children: questions.map((question, index) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			className: "saved-question-row",
+			children: [
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: index + 1 }),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { children: question }),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+					type: "button",
+					onClick: () => onDelete(index),
+					"aria-label": "削除",
+					children: "削除"
+				})
+			]
+		}, `${question}-${index}`))
+	});
 }
 function readStringArray(key) {
 	try {
@@ -46176,143 +46996,251 @@ function RoomScreen({ roomCode }) {
 			tone: "success"
 		});
 	}
-	if (error) return <section className="room-screen compact">
-        <button className="back-link" onClick={() => window.location.hash = "/"}>
-          ホームへ
-        </button>
-        <div className="notice error">{error}</div>
-        <p className="muted">部屋コードを確認して、もう一度入り直してください。</p>
-      </section>;
-	if (!room || !currentCard) return <section className="room-screen compact">
-        <p className="muted">{status}</p>
-      </section>;
-	return <section className="room-screen">
-      <header className="room-header">
-        <button className="back-link" onClick={() => window.location.hash = "/"}>
-          ホーム
-        </button>
-        <div className="room-code">部屋 {room.room_code}</div>
-      </header>
-
-      <div className="presence-pill">{partnerJoined ? "相手が参加中" : "相手を待っています"}</div>
-
-      {toast ? <div className={`notice ${toast.tone}`}>{toast.message}</div> : null}
-
-      {isRoomCreator ? <CardFilters selectedCategory={draftCategory} selectedLevel={selectedLevel} onCategoryChange={setDraftCategory} onLevelChange={changeLevel} matchingCount={matchingIndexes.length} draftCard={draftCard} draftPosition={draftPosition} onMoveDraft={moveDraft} onRandomDraft={randomDraft} onSetAgendaQuestion={setAgendaQuestion} saving={saving} /> : null}
-
-      <QuestionCardView card={currentCard} progressText={progressText} showDetails={isRoomCreator} />
-
-      <AnswerPanel answerText={answerText} answerSaving={answerSaving} canRevealAnswers={canRevealAnswers} currentUserId={currentUserId} ownAnswer={ownAnswer} answers={currentCardAnswers} status={answerStatus} onAnswerTextChange={setAnswerText} onSubmit={submitAnswer} />
-
-      <div className="controls">
-        <button onClick={() => moveInOrder(-1)} disabled={saving || !canAdvance || currentIndex === 0}>
-          戻る
-        </button>
-        <button onClick={() => moveInOrder(1)} disabled={saving || !canAdvance || currentIndex >= orderedCards.length - 1}>
-          次へ
-        </button>
-      </div>
-
-      <button className="ghost-button" onClick={copyShareUrl}>
-        共有URLをコピー
-      </button>
-    </section>;
+	if (error) return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+		className: "room-screen compact",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+				className: "back-link",
+				onClick: () => window.location.hash = "/",
+				children: "ホームへ"
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				className: "notice error",
+				children: error
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "muted",
+				children: "部屋コードを確認して、もう一度入り直してください。"
+			})
+		]
+	});
+	if (!room || !currentCard) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("section", {
+		className: "room-screen compact",
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+			className: "muted",
+			children: status
+		})
+	});
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+		className: "room-screen",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("header", {
+				className: "room-header",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+					className: "back-link",
+					onClick: () => window.location.hash = "/",
+					children: "ホーム"
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "room-code",
+					children: ["部屋 ", room.room_code]
+				})]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				className: "presence-pill",
+				children: partnerJoined ? "相手が参加中" : "相手を待っています"
+			}),
+			toast ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				className: `notice ${toast.tone}`,
+				children: toast.message
+			}) : null,
+			isRoomCreator ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardFilters, {
+				selectedCategory: draftCategory,
+				selectedLevel,
+				onCategoryChange: setDraftCategory,
+				onLevelChange: changeLevel,
+				matchingCount: matchingIndexes.length,
+				draftCard,
+				draftPosition,
+				onMoveDraft: moveDraft,
+				onRandomDraft: randomDraft,
+				onSetAgendaQuestion: setAgendaQuestion,
+				saving
+			}) : null,
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(QuestionCardView, {
+				card: currentCard,
+				progressText,
+				showDetails: isRoomCreator
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AnswerPanel, {
+				answerText,
+				answerSaving,
+				canRevealAnswers,
+				currentUserId,
+				ownAnswer,
+				answers: currentCardAnswers,
+				status: answerStatus,
+				onAnswerTextChange: setAnswerText,
+				onSubmit: submitAnswer
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "controls",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+					onClick: () => moveInOrder(-1),
+					disabled: saving || !canAdvance || currentIndex === 0,
+					children: "戻る"
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+					onClick: () => moveInOrder(1),
+					disabled: saving || !canAdvance || currentIndex >= orderedCards.length - 1,
+					children: "次へ"
+				})]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+				className: "ghost-button",
+				onClick: copyShareUrl,
+				children: "共有URLをコピー"
+			})
+		]
+	});
 }
 function CardFilters({ selectedCategory, selectedLevel, onCategoryChange, onLevelChange, matchingCount, draftCard, draftPosition, onMoveDraft, onRandomDraft, onSetAgendaQuestion, saving }) {
-	return <section className="filter-panel" aria-label="カード条件">
-      <div className="filter-row">
-        <div className="filter-title">カテゴリ</div>
-        <div className="chip-list">
-          <button className={selectedCategory === "all" ? "chip selected" : "chip"} onClick={() => onCategoryChange("all")}>
-            すべて
-          </button>
-          {categoryOptions.map(([category, label]) => <button key={category} className={selectedCategory === category ? "chip selected" : "chip"} onClick={() => onCategoryChange(category)}>
-              {label}
-            </button>)}
-        </div>
-      </div>
-
-      <div className="filter-row">
-        <div className="filter-title">レベル</div>
-        <div className="chip-list">
-          <button className={selectedLevel === "all" ? "chip selected" : "chip"} onClick={() => onLevelChange("all")}>
-            すべて
-          </button>
-          {levelOptions.map((level) => <button key={level} className={selectedLevel === level ? "chip selected" : "chip"} onClick={() => onLevelChange(level)}>
-              {level}
-            </button>)}
-        </div>
-      </div>
-
-      <div className="filter-count">{matchingCount}問</div>
-      {draftCard ? <article className="agenda-preview">
-          <div className="card-meta">
-            <span>{categoryLabels[draftCard.category]}</span>
-            <span>{levelLabels[draftCard.level]}</span>
-            <span>{draftPosition >= 0 ? `${draftPosition + 1} / ${matchingCount}` : `1 / ${matchingCount}`}</span>
-          </div>
-          <p>{draftCard.text}</p>
-          <div className="agenda-preview-controls">
-            <button onClick={() => onMoveDraft(-1)} disabled={saving || draftPosition <= 0}>
-              前の候補
-            </button>
-            <button onClick={() => onMoveDraft(1)} disabled={saving || draftPosition >= matchingCount - 1}>
-              次の候補
-            </button>
-            <button className="wide-button" onClick={onRandomDraft} disabled={saving || matchingCount === 0}>
-              この条件でランダム
-            </button>
-          </div>
-        </article> : null}
-      <button className="agenda-button" onClick={onSetAgendaQuestion} disabled={saving || matchingCount === 0}>
-        この質問を議題にする
-      </button>
-    </section>;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+		className: "filter-panel",
+		"aria-label": "カード条件",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "filter-row",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+					className: "filter-title",
+					children: "カテゴリ"
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "chip-list",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+						className: selectedCategory === "all" ? "chip selected" : "chip",
+						onClick: () => onCategoryChange("all"),
+						children: "すべて"
+					}), categoryOptions.map(([category, label]) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+						className: selectedCategory === category ? "chip selected" : "chip",
+						onClick: () => onCategoryChange(category),
+						children: label
+					}, category))]
+				})]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "filter-row",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+					className: "filter-title",
+					children: "レベル"
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "chip-list",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+						className: selectedLevel === "all" ? "chip selected" : "chip",
+						onClick: () => onLevelChange("all"),
+						children: "すべて"
+					}), levelOptions.map((level) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+						className: selectedLevel === level ? "chip selected" : "chip",
+						onClick: () => onLevelChange(level),
+						children: level
+					}, level))]
+				})]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "filter-count",
+				children: [matchingCount, "問"]
+			}),
+			draftCard ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("article", {
+				className: "agenda-preview",
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "card-meta",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: categoryLabels[draftCard.category] }),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: levelLabels[draftCard.level] }),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: draftPosition >= 0 ? `${draftPosition + 1} / ${matchingCount}` : `1 / ${matchingCount}` })
+						]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { children: draftCard.text }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "agenda-preview-controls",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+								onClick: () => onMoveDraft(-1),
+								disabled: saving || draftPosition <= 0,
+								children: "前の候補"
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+								onClick: () => onMoveDraft(1),
+								disabled: saving || draftPosition >= matchingCount - 1,
+								children: "次の候補"
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+								className: "wide-button",
+								onClick: onRandomDraft,
+								disabled: saving || matchingCount === 0,
+								children: "この条件でランダム"
+							})
+						]
+					})
+				]
+			}) : null,
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+				className: "agenda-button",
+				onClick: onSetAgendaQuestion,
+				disabled: saving || matchingCount === 0,
+				children: "この質問を議題にする"
+			})
+		]
+	});
 }
 function AnswerPanel({ answerText, answerSaving, canRevealAnswers, currentUserId, ownAnswer, answers, status, onAnswerTextChange, onSubmit }) {
-	return <section className="answer-panel" aria-label="回答">
-      <div className="answer-heading">
-        <h2>回答</h2>
-        <span>{answers.length} / 2</span>
-      </div>
-
-      {status ? <div className="notice error">{status}</div> : null}
-
-      <form className="answer-form" onSubmit={onSubmit}>
-        <textarea value={answerText} onChange={(event) => onAnswerTextChange(event.target.value)} placeholder="自分の回答を書く" rows={4} maxLength={2e3} />
-        <button type="submit" disabled={answerSaving}>
-          {answerSaving ? "保存中..." : ownAnswer ? "更新する" : "回答する"}
-        </button>
-      </form>
-
-      {!canRevealAnswers ? <p className="answer-wait">
-          {ownAnswer ? "回答済みです。相手の回答を待っています。" : "2人とも回答すると、お互いの回答が表示されます。"}
-        </p> : <div className="answer-list">
-          {answers.map((answer) => <article className="answer-card" key={`${answer.card_index}-${answer.user_id}`}>
-              <div>{answer.user_id === currentUserId ? "あなた" : "相手"}</div>
-              <p>{answer.answer}</p>
-            </article>)}
-        </div>}
-    </section>;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+		className: "answer-panel",
+		"aria-label": "回答",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "answer-heading",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", { children: "回答" }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { children: [answers.length, " / 2"] })]
+			}),
+			status ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				className: "notice error",
+				children: status
+			}) : null,
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("form", {
+				className: "answer-form",
+				onSubmit,
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("textarea", {
+					value: answerText,
+					onChange: (event) => onAnswerTextChange(event.target.value),
+					placeholder: "自分の回答を書く",
+					rows: 4,
+					maxLength: 2e3
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+					type: "submit",
+					disabled: answerSaving,
+					children: answerSaving ? "保存中..." : ownAnswer ? "更新する" : "回答する"
+				})]
+			}),
+			!canRevealAnswers ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "answer-wait",
+				children: ownAnswer ? "回答済みです。相手の回答を待っています。" : "2人とも回答すると、お互いの回答が表示されます。"
+			}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				className: "answer-list",
+				children: answers.map((answer) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("article", {
+					className: "answer-card",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { children: answer.user_id === currentUserId ? "あなた" : "相手" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { children: answer.answer })]
+				}, `${answer.card_index}-${answer.user_id}`))
+			})
+		]
+	});
 }
 function QuestionCardView({ card, progressText, showDetails }) {
 	const textLength = card.text.length + (card.followUps?.join("").length ?? 0);
-	const densityClass = textLength > 520 ? "density-max" : textLength > 320 ? "density-high" : textLength > 180 ? "density-mid" : "";
-	return <article className={`question-card ${densityClass}`}>
-      <div className="card-meta">
-        {showDetails ? <>
-            <span>{categoryLabels[card.category]}</span>
-            <span>{levelLabels[card.level]}</span>
-          </> : null}
-        <span>{progressText}</span>
-      </div>
-
-      <p className="question-text">{card.text}</p>
-
-      {card.followUps?.length ? <ul className="follow-ups">
-          {card.followUps.map((followUp) => <li key={followUp}>{followUp}</li>)}
-        </ul> : null}
-    </article>;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("article", {
+		className: `question-card ${textLength > 520 ? "density-max" : textLength > 320 ? "density-high" : textLength > 180 ? "density-mid" : ""}`,
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "card-meta",
+				children: [showDetails ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: categoryLabels[card.category] }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: levelLabels[card.level] })] }) : null, /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: progressText })]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "question-text",
+				children: card.text
+			}),
+			card.followUps?.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ul", {
+				className: "follow-ups",
+				children: card.followUps.map((followUp) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("li", { children: followUp }, followUp))
+			}) : null
+		]
+	});
 }
 function clampIndex(index, length) {
 	if (length <= 0) return 0;
